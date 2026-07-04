@@ -33,28 +33,25 @@ import dashboardRoutes from './routes/dashboard.js';
 import adminRoutes from './routes/admin.js';
 import searchApiRoutes from './routes/api/search.js';
 import { alertWorker } from './workers/alertWorker.js';
-import { startAlertEngine, setAlertWorker, stopAlertEngine, initServerlessAlertEngine } from './services/alertEngine.js';
+import { startAlertEngine, setAlertWorker, stopAlertEngine } from './services/alertEngine.js';
 import { startRetentionScheduler } from './services/retentionService.js';
 import { startWatcher, stopWatcher, getWatcherStatus } from './services/watcherService.js';
 import { startCacheService } from './services/cacheService.js';
 import { createHtmlCspMiddleware } from './middleware/htmlCsp.js';
 
 // ── Detect environment ────────────────────────────────────────────────────────
-const IS_VERCEL = !!(process.env.VERCEL || process.env.VERCEL_ENV || process.env.NOW_REGION);
 const IS_PROD = process.env.NODE_ENV === 'production';
 
-// ── Anti-crash global (non-Vercel only) ──────────────────────────────────────
-if (!IS_VERCEL) {
-  process.on('uncaughtException', (err) => {
-    logger.error({ event: 'uncaughtException', message: err.message, stack: err.stack });
-    process.exit(1);
-  });
-}
+// ── Anti-crash global ────────────────────────────────────────────────────────
+process.on('uncaughtException', (err) => {
+  logger.error({ event: 'uncaughtException', message: err.message, stack: err.stack });
+  process.exit(1);
+});
 process.on('unhandledRejection', (reason) => {
   logger.error({ event: 'unhandledRejection', message: reason?.message || String(reason) });
 });
 
-// ── Express app (built synchronously — Vercel needs this ready at module load) ─
+// ── Express app ────────────────────────────────────────────────────────────────
 const app = express();
 app.set('trust proxy', 1);
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -125,7 +122,7 @@ const loginLimiter = rateLimit({
 // Add specific rate limiter for alerts/stream to prevent abuse
 const alertsStreamLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute window
-  max: IS_VERCEL ? 60 : 30, // 60 requests per minute on Vercel, 30 otherwise
+  max: 30, // 30 requests per minute
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => req.method !== 'GET'
@@ -142,10 +139,10 @@ const sessionStore = new MySQLSessionStore({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   waitForConnections: true,
-  connectionLimit: parseInt(process.env.DB_SESSION_CONNECTION_LIMIT || (IS_VERCEL ? '1' : '10'), 10),
-  queueLimit: parseInt(process.env.DB_SESSION_QUEUE_LIMIT || (IS_VERCEL ? '25' : '0'), 10),
+  connectionLimit: parseInt(process.env.DB_SESSION_CONNECTION_LIMIT || '10', 10),
+  queueLimit: parseInt(process.env.DB_SESSION_QUEUE_LIMIT || '0', 10),
   ssl: sslOpts || undefined,
-  clearExpired: !IS_VERCEL,
+  clearExpired: true,
   checkExpirationInterval: 900000,
   expiration: 86400000,
   schema: { tableName: 'sessions' }
@@ -187,24 +184,7 @@ app.get('/api/watchdogs/status', requireAuth, (req, res) => {
   res.json(getWatcherStatus());
 });
 app.get('/api/alerts/stream', alertsStreamLimiter, requireAuth, (req, res) => {
-  const isVercel = !!(process.env.VERCEL || process.env.VERCEL_ENV);
   const userId = req.session?.user?.id;
-  
-  if (isVercel) {
-    // On Vercel serverless, SSE times out after 10-300s causing constant reconnections.
-    // Return a JSON response indicating polling mode instead.
-    // The client (dashboard.html, watchlog.html) falls back to polling automatically.
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
-    res.write('retry: 60000\n');
-    res.write('event: connected\ndata: {"mode":"polling","reason":"vercel_serverless"}\n\n');
-    // Close after 5s to avoid timeout errors in logs
-    setTimeout(() => { try { res.end(); } catch(_){} }, 5000);
-    return;
-  }
-  
   alertWorker.addClient(res, req);
   
   // Clean up connection when client disconnects
@@ -214,7 +194,7 @@ app.get('/api/alerts/stream', alertsStreamLimiter, requireAuth, (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime(), vercel: IS_VERCEL });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() });
 });
 
 // ── Static files ──────────────────────────────────────────────────────────────

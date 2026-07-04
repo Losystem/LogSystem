@@ -48,17 +48,15 @@ describe('Dashboard frontend', () => {
   });
 });
 
-describe('Alert engine serverless', () => {
-  it('exports evalAllForUser and initServerlessAlertEngine', async () => {
+describe('Alert engine', () => {
+  it('exports evalAllForUser', async () => {
     const mod = await import('../services/alertEngine.js');
     expect(typeof mod.evalAllForUser).toBe('function');
-    expect(typeof mod.initServerlessAlertEngine).toBe('function');
   });
 
   it('seeds global alert rules not admin-only', () => {
     const src = readFileSync(path.join(root, 'services/alertEngine.js'), 'utf8');
     expect(src).toContain('is_global = 1');
-    expect(src).toContain('initServerlessAlertEngine');
   });
 
   it('evalRule uses COALESCE for timestamps', () => {
@@ -67,8 +65,8 @@ describe('Alert engine serverless', () => {
   });
 });
 
-describe('Import Vercel integration', () => {
-  it('calls evalAllForUser on Vercel after import', () => {
+describe('Import integration', () => {
+  it('calls evalAllForUser after import', () => {
     const src = readFileSync(path.join(root, 'routes/import.js'), 'utf8');
     expect(src).toContain('await evalAllForUser(userId)');
     expect(src).toContain('4500000');
@@ -91,12 +89,6 @@ describe('Search API', () => {
 });
 
 describe('RAR archive handler', () => {
-  it('does not disable WASM on Vercel', () => {
-    const src = readFileSync(path.join(root, 'lib/processing/archiveHandler.js'), 'utf8');
-    expect(src).not.toContain('if (process.env.VERCEL) {');
-    expect(src).not.toContain('return null; // Return null to disable WASM');
-  });
-
   it('loads wasm from lib/assets path', () => {
     const src = readFileSync(path.join(root, 'lib/processing/archiveHandler.js'), 'utf8');
     expect(src).toContain("'..', 'assets', 'unrar.wasm'");
@@ -126,7 +118,7 @@ describe('HTTP log ingestion', () => {
     expect(src).toContain('logsIngestionRoutes');
   });
 
-  it('ingest triggers alert eval on Vercel', () => {
+  it('ingest triggers alert eval', () => {
     const src = readFileSync(path.join(root, 'routes/logs-ingestion.js'), 'utf8');
     expect(src).toContain("alertEngineBus.emit('logs.inserted'");
     expect(src).toContain('await evalAllForUser(userId)');
@@ -155,19 +147,18 @@ describe('Archive extraction', () => {
   });
 });
 
-describe('Vercel config', () => {
-  it('has maxDuration and includedFiles for WASM', () => {
-    const cfg = JSON.parse(readFileSync(path.join(root, 'vercel.json'), 'utf8'));
-    expect(cfg.functions?.['server.js']?.maxDuration).toBe(60);
-    const includes = cfg.functions?.['server.js']?.includedFiles || [];
-    expect(includes.some(f => f.includes('unrar.wasm') || f.includes('lib/assets'))).toBe(true);
+describe('Render config', () => {
+  it('has render.yaml configuration', () => {
+    const yaml = readFileSync(path.join(root, 'render.yaml'), 'utf8');
+    expect(yaml).toContain('type: web');
+    expect(yaml).toContain('env: node');
+    expect(yaml).toContain('healthCheckPath: /health');
   });
 });
 
 describe('Server module load', () => {
-  it('server.js configures Vercel alert init and all API routes', () => {
+  it('server.js configures all API routes', () => {
     const src = readFileSync(path.join(root, 'server.js'), 'utf8');
-    expect(src).toContain('initServerlessAlertEngine');
     expect(src).toContain("app.use('/api/dashboard'");
     expect(src).toContain("app.use('/api/search'");
     expect(src).toContain("app.use('/api/import'");
