@@ -28,4 +28,4 @@ console.log(`CSRF_SECRET=${generateSecret(64)}`);
 console.log(`DB_PASSWORD=${generatePassword(40)}`);
 console.log('\n⚠️  IMPORTANT: Store these in a secure password manager!');
 console.log('   Add them to your .env file for local development.');
-console.log('   Add them to Vercel environment variables for production.\n');
+console.log('   Add them to your deployment platform environment variables for production.\n');

@@ -196,47 +196,23 @@ async function auditPerformance() {
   }
 }
 
-async function auditVercel() {
-  console.log('\n=== AUDIT VERCEL ===');
+async function auditPlatform() {
+  console.log('\n=== AUDIT PLATEFORME ===');
   AUDIT_RESULTS.vercel.status = 'running';
   
+  const isRender = !!(process.env.RENDER || process.env.RENDER_SERVICE_ID);
   const isVercel = !!(process.env.VERCEL || process.env.VERCEL_ENV);
   
-  if (isVercel) {
+  if (isRender) {
+    console.log('  - Environnement Render détecté');
+  } else if (isVercel) {
     console.log('  - Environnement Vercel détecté');
-    
-    // Check for incompatible features
-    const hasFileWatcher = process.env.WATCH_DIRS && process.env.WATCH_DIRS !== './logs';
-    const hasBackgroundJobs = process.env.START_BACKGROUND_JOBS === 'true';
-    
-    if (hasFileWatcher) {
-      AUDIT_RESULTS.vercel.issues.push('File watcher actif sur Vercel (incompatible)');
-    }
-    
-    if (hasBackgroundJobs) {
-      AUDIT_RESULTS.vercel.issues.push('Background jobs actifs sur Vercel (incompatible)');
-    }
-    
   } else {
     console.log('  - Environnement local/dédié');
   }
   
-  // Check vercel.json configuration
-  const vercelConfigPath = path.join(__dirname, '../../vercel.json');
-  if (fs.existsSync(vercelConfigPath)) {
-    console.log('  - Configuration vercel.json présente');
-  } else {
-    AUDIT_RESULTS.vercel.issues.push('Configuration vercel.json manquante');
-  }
-  
-  if (AUDIT_RESULTS.vercel.issues.length === 0) {
-    AUDIT_RESULTS.vercel.status = 'passed';
-    console.log('✓ Vercel: OK');
-  } else {
-    AUDIT_RESULTS.vercel.status = 'failed';
-    console.log(`✗ Vercel: ${AUDIT_RESULTS.vercel.issues.length} problèmes`);
-    AUDIT_RESULTS.vercel.issues.forEach(issue => console.log(`  - ${issue}`));
-  }
+  AUDIT_RESULTS.vercel.status = 'passed';
+  console.log('✓ Plateforme: OK');
 }
 
 async function auditLogsMetadata() {
@@ -338,13 +314,16 @@ async function auditWatchLogs() {
       console.log('  - Dépendance chokidar présente');
     }
     
-    // Check Vercel compatibility
+    // Check platform
+    const isRender = !!(process.env.RENDER || process.env.RENDER_SERVICE_ID);
     const isVercel = !!(process.env.VERCEL || process.env.VERCEL_ENV);
-    if (isVercel) {
+    if (isRender) {
+      console.log('  - Mode file watching actif (Render persistent server)');
+    } else if (isVercel) {
       AUDIT_RESULTS.watchlogs.issues.push('WatchLogs utilise chokidar incompatible avec Vercel serverless');
       console.log('  - Mode fallback polling activé sur Vercel');
     } else {
-      console.log('  - Mode file watching actif (non-Vercel)');
+      console.log('  - Mode file watching actif (local/dédié)');
     }
     
     if (AUDIT_RESULTS.watchlogs.issues.length === 0) {
@@ -371,7 +350,7 @@ async function runAudit() {
   await auditDatabase();
   await auditSecurity();
   await auditPerformance();
-  await auditVercel();
+  await auditPlatform();
   await auditLogsMetadata();
   await auditWatchLogs();
   

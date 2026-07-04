@@ -18,7 +18,7 @@ router.use(ingestLimiter);
 /**
  * POST /api/logs/ingest
  * 
- * Endpoint d'ingestion HTTP pour les logs en temps réel (compatible Vercel)
+ * Endpoint d'ingestion HTTP pour les logs en temps réel
  * Les applications peuvent envoyer leurs logs via HTTP POST au lieu de file watching
  * 
  * Body attendu:

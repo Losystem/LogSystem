@@ -8,15 +8,32 @@ SET @col_exists = (
     AND TABLE_NAME   = 'audit_log'
     AND COLUMN_NAME  = 'status'
 );
+
 SET @sql = IF(@col_exists = 0,
-  "ALTER TABLE `audit_log` ADD COLUMN `status` VARCHAR(20) DEFAULT 'success' AFTER `ip_address`",
-  "SELECT 'audit_log.status already exists' AS msg"
+  'ALTER TABLE `audit_log` ADD COLUMN `status` VARCHAR(20) DEFAULT ''success'' AFTER `ip_address`',
+  'SELECT ''audit_log.status already exists'' AS msg'
 );
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- Index on status (safe: CREATE INDEX IF NOT EXISTS not supported in MySQL 5.x, use try/ignore)
-CREATE INDEX `idx_audit_status` ON `audit_log` (`status`);
--- ^ Will fail silently if already exists; migrationRunner ignores ER_DUP_KEYNAME
+SET @index_exists = (
+  SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME   = 'audit_log'
+    AND INDEX_NAME   = 'idx_audit_status'
+);
+
+SET @sql_index = IF(@index_exists = 0,
+  'CREATE INDEX `idx_audit_status` ON `audit_log` (`status`)',
+  'SELECT ''idx_audit_status already exists'' AS msg'
+);
+
+PREPARE stmt_idx FROM @sql_index;
+EXECUTE stmt_idx;
+DEALLOCATE PREPARE stmt_idx;
 
 -- 2. Ensure logs.event_timestamp exists (needed by trends query)
 SET @col2 = (
@@ -25,11 +42,15 @@ SET @col2 = (
     AND TABLE_NAME   = 'logs'
     AND COLUMN_NAME  = 'event_timestamp'
 );
+
 SET @sql2 = IF(@col2 = 0,
-  "ALTER TABLE `logs` ADD COLUMN `event_timestamp` DATETIME DEFAULT NULL AFTER `timestamp`",
-  "SELECT 'logs.event_timestamp already exists' AS msg"
+  'ALTER TABLE `logs` ADD COLUMN `event_timestamp` DATETIME DEFAULT NULL AFTER `timestamp`',
+  'SELECT ''logs.event_timestamp already exists'' AS msg'
 );
-PREPARE stmt2 FROM @sql2; EXECUTE stmt2; DEALLOCATE PREPARE stmt2;
+
+PREPARE stmt2 FROM @sql2;
+EXECUTE stmt2;
+DEALLOCATE PREPARE stmt2;
 
 -- 3. Ensure logs.imported_at exists
 SET @col3 = (
@@ -38,11 +59,15 @@ SET @col3 = (
     AND TABLE_NAME   = 'logs'
     AND COLUMN_NAME  = 'imported_at'
 );
+
 SET @sql3 = IF(@col3 = 0,
-  "ALTER TABLE `logs` ADD COLUMN `imported_at` DATETIME DEFAULT NULL AFTER `created_at`",
-  "SELECT 'logs.imported_at already exists' AS msg"
+  'ALTER TABLE `logs` ADD COLUMN `imported_at` DATETIME DEFAULT NULL AFTER `created_at`',
+  'SELECT ''logs.imported_at already exists'' AS msg'
 );
-PREPARE stmt3 FROM @sql3; EXECUTE stmt3; DEALLOCATE PREPARE stmt3;
+
+PREPARE stmt3 FROM @sql3;
+EXECUTE stmt3;
+DEALLOCATE PREPARE stmt3;
 
 -- 4. Ensure anomalies table exists (for anomaliesService.js)
 CREATE TABLE IF NOT EXISTS `anomalies` (

@@ -11,7 +11,7 @@ process.env.DB_SSL ||= 'false';
 process.env.RUN_MIGRATIONS_ON_START ||= 'false';
 process.env.START_BACKGROUND_JOBS ||= 'false';
 
-const ignoredDirs = new Set(['.git', 'node_modules', '.vercel', 'logs']);
+const ignoredDirs = new Set(['.git', 'node_modules', 'logs']);
 
 function collectJsFiles(dir, files = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -28,7 +28,7 @@ function collectJsFiles(dir, files = []) {
 
 const files = collectJsFiles(PROJECT_ROOT);
 
-// Bundle unrar.wasm for Vercel serverless (RAR extraction)
+// Bundle unrar.wasm for RAR extraction
 const wasmSources = [
   path.join(PROJECT_ROOT, 'node_modules', 'node-unrar-js', 'dist', 'js', 'unrar.wasm'),
   path.join(PROJECT_ROOT, 'node_modules', 'node-unrar-js', 'js', 'unrar.wasm'),

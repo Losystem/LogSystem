@@ -234,29 +234,25 @@ async function start() {
   await startWatcher().catch(e => logger.error({ event: 'watcherStartFailed', message: e.message }));
   const logsDir = (process.env.WATCH_DIRS || './logs').split(',')[0].trim();
   try { if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true }); } catch (_) {}
-
-  // Listen (persistent server only)
-  const PORT_NUM = parseInt(process.env.PORT || '3001', 10);
-  const server = app.listen(PORT_NUM, () => {
-    server.timeout = 300000;
-    server.keepAliveTimeout = 310000;
-    server.headersTimeout = 320000;
-    logger.info({ event: 'server_started', port: PORT_NUM }, `[LogSystem] Running on http://localhost:${PORT_NUM}`);
-  });
-
-  const shutdown = (signal) => {
-    logger.info(`[${signal}] Shutting down...`);
-    alertWorker.closeAll();
-    stopWatcher();
-    stopAlertEngine();
-    server.close(() => process.exit(0));
-    setTimeout(() => process.exit(1), 10000);
-  };
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
-// Start the server
-start().catch(err => {
-  logger.error({ event: 'init_failed', message: err.message });
+// Listen (persistent server for Render)
+const PORT_NUM = parseInt(process.env.PORT || '3001', 10);
+const server = app.listen(PORT_NUM, async () => {
+  server.timeout = 300000;
+  server.keepAliveTimeout = 310000;
+  server.headersTimeout = 320000;
+  logger.info({ event: 'server_started', port: PORT_NUM }, `[LogSystem] Running on http://localhost:${PORT_NUM}`);
+  await start();
 });
+
+const shutdown = (signal) => {
+  logger.info(`[${signal}] Shutting down...`);
+  alertWorker.closeAll();
+  stopWatcher();
+  stopAlertEngine();
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 10000);
+};
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

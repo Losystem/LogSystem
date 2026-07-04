@@ -33,11 +33,29 @@ SET @col_exists = (
     AND TABLE_NAME   = 'logs'
     AND COLUMN_NAME  = 'external_source_id'
 );
-SET @sql = IF(@col_exists = 0,
-  "ALTER TABLE `logs` ADD COLUMN `external_source_id` INT UNSIGNED DEFAULT NULL AFTER `batch_id`",
-  "SELECT 'logs.external_source_id already exists' AS msg"
-);
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
--- Add index for external_source_id
-CREATE INDEX `idx_logs_external_source` ON `logs` (`external_source_id`);
+SET @sql = IF(@col_exists = 0,
+  'ALTER TABLE `logs` ADD COLUMN `external_source_id` INT UNSIGNED DEFAULT NULL AFTER `batch_id`',
+  'SELECT ''logs.external_source_id already exists'' AS msg'
+);
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add index for external_source_id (ignore if already exists)
+SET @index_exists = (
+  SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME   = 'logs'
+    AND INDEX_NAME   = 'idx_logs_external_source'
+);
+
+SET @sql_index = IF(@index_exists = 0,
+  'CREATE INDEX `idx_logs_external_source` ON `logs` (`external_source_id`)',
+  'SELECT ''idx_logs_external_source already exists'' AS msg'
+);
+
+PREPARE stmt_idx FROM @sql_index;
+EXECUTE stmt_idx;
+DEALLOCATE PREPARE stmt_idx;

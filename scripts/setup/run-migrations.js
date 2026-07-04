@@ -1,12 +1,7 @@
 /**
- * Script à exécuter UNE SEULE FOIS après déploiement Vercel
- * pour appliquer les migrations sur la base Aiven.
+ * Script à exécuter pour appliquer les migrations sur la base de données
  *
  * Usage local :
- *   node scripts/setup/run-migrations.js
- *
- * Ou depuis Vercel CLI :
- *   vercel env pull .env.local
  *   node scripts/setup/run-migrations.js
  */
 import dotenv from 'dotenv';

@@ -464,21 +464,6 @@ async function evalAll() {
   }
 }
 
-let _serverlessAlertInit = false;
-
-/** Lightweight alert engine for Vercel — no background timers, evaluates on import/API */
-export async function initServerlessAlertEngine() {
-  if (_serverlessAlertInit) return;
-  _serverlessAlertInit = true;
-  await ensureDefaultAlertRules().catch(e =>
-    logger.error({ event: 'alert_rules_seed_failed', error: e.message }, '[ALERT]')
-  );
-  alertEngineBus.on('logs.inserted', ({ userId }) => {
-    if (userId) debounceEvalUser(userId);
-  });
-  logger.info({ event: 'alert_engine_serverless_ready' }, '[ALERT]');
-}
-
 export async function startAlertEngine() {
   // FIX #3: Évaluation initiale différée pour laisser le serveur démarrer
   logger.info({ event: 'alert_engine_started' }, '[ALERT]');

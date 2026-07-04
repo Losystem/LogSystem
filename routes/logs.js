@@ -355,17 +355,6 @@ router.get('/watch/stream', async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
 
-    // On Vercel: close immediately after connected event to prevent MySQL pool exhaustion
-    // Frontend will fall back to polling automatically
-    const isVercelEnv = !!(process.env.VERCEL || process.env.VERCEL_ENV);
-    if (isVercelEnv) {
-      res.flushHeaders();
-      res.write('event: connected\n');
-      res.write(`data: ${JSON.stringify({ connected: false, mode: 'polling', reason: 'vercel_serverless', user_id: user.id })}\n\n`);
-      setTimeout(() => { try { res.end(); } catch(_){} }, 100);
-      return;
-    }
-
     res.flushHeaders();
     res.write('event: connected\n');
     res.write(`data: ${JSON.stringify({ connected: true, user_id: user.id })}\n\n`);

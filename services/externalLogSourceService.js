@@ -1,6 +1,6 @@
 /**
- * External Log Source Service - Polling system for Vercel-compatible log ingestion
- * Replaces file watching with HTTP polling of external log sources
+ * External Log Source Service - Polling system for external log ingestion
+ * Supports HTTP polling, webhooks, and external log sources
  */
 
 import logger from '../config/logger.js';
@@ -374,17 +374,6 @@ async function ingestLogs(logs, source) {
  * Get status of all active pollers
  */
 export function getPollerStatus() {
-  const IS_VERCEL = !!(process.env.VERCEL || process.env.VERCEL_ENV);
-  
-  if (IS_VERCEL) {
-    return {
-      platform: 'vercel',
-      active: false,
-      message: 'External polling requires persistent server. Use HTTP ingestion or webhooks instead.',
-      pollers: []
-    };
-  }
-
   const pollers = [];
   for (const [sourceId, poller] of activePollers) {
     pollers.push({
