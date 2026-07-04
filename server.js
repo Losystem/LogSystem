@@ -28,6 +28,7 @@ import { csrfMiddleware, csrfValidation } from './middleware/csrf.js';
 import authRoutes from './routes/auth.js';
 import logsRoutes from './routes/logs.js';
 import logsIngestionRoutes from './routes/logs-ingestion.js';
+import errorSuggestionsRoutes from './routes/api/error-suggestions.js';
 import importRoutes, { multerErrorHandler } from './routes/import.js';
 import dashboardRoutes from './routes/dashboard.js';
 import adminRoutes from './routes/admin.js';
@@ -179,6 +180,7 @@ app.use('/api/import', requireAuth, scopeGuard, importRoutes);
 app.use('/api/dashboard', requireAuth, scopeGuard, dashboardRoutes);
 app.use('/api/admin', requireAuth, scopeGuard, adminRoutes);
 app.use('/api/search', requireAuth, scopeGuard, searchApiRoutes);
+app.use('/api/error-suggestions', requireAuth, scopeGuard, errorSuggestionsRoutes);
 
 app.get('/api/watchdogs/status', requireAuth, (req, res) => {
   res.json(getWatcherStatus());
