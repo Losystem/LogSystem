@@ -117,7 +117,7 @@ const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, standardHe
 app.use(globalLimiter);
 
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: loginMax,
+  windowMs: 15 * 60 * 1000, max: 10,
   message: { error: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.' },
   standardHeaders: true, legacyHeaders: false
 });
@@ -125,7 +125,7 @@ const loginLimiter = rateLimit({
 // Add specific rate limiter for alerts/stream to prevent abuse
 const alertsStreamLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute window
-  max: isVercel ? 60 : 30, // 60 requests per minute on Vercel, 30 otherwise
+  max: IS_VERCEL ? 60 : 30, // 60 requests per minute on Vercel, 30 otherwise
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => req.method !== 'GET'
@@ -152,7 +152,7 @@ const sessionStore = new MySQLSessionStore({
 });
 
 app.use(session({
-  secret: effectiveSecret,
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   store: sessionStore,
@@ -276,13 +276,7 @@ async function start() {
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
-// Start initialization (non-blocking — app already exported below)
-initialize().catch(err => {
+// Start the server
+start().catch(err => {
   logger.error({ event: 'init_failed', message: err.message });
 });
-
-// ── EXPORT (must be last, synchronous, and unconditional) ─────────────────────
-// Vercel reads this export to find the request handler.
-// The app is fully configured above — routes, middleware, session — so it's
-// ready to handle requests even before initialize() resolves.
-export default app;
