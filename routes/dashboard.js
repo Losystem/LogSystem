@@ -108,9 +108,9 @@ router.get('/summary', async (req, res) => {
      * importedTodayCount: logs imported today (ingestion activity).
      */
     const todayStr = new Date().toISOString().slice(0, 10);
-    const eventTsCol = 'COALESCE(event_timestamp, timestamp, imported_at)';
+    const timestampCol = 'COALESCE(timestamp, imported_at)';
     var [today] = await pool.execute(
-      `SELECT COUNT(*) as cnt FROM logs WHERE ${eventTsCol} IS NOT NULL AND ${eventTsCol} >= ?` + scope.sql,
+      `SELECT COUNT(*) as cnt FROM logs WHERE ${timestampCol} IS NOT NULL AND ${timestampCol} >= ?` + scope.sql,
       [todayStr + ' 00:00:00', ...scope.params]
     );
     var [importedToday] = await pool.execute(
@@ -118,7 +118,7 @@ router.get('/summary', async (req, res) => {
       [todayStr + ' 00:00:00', ...scope.params]
     );
     var [errorCount] = await pool.execute(
-      `SELECT COUNT(*) as cnt FROM logs WHERE ${eventTsCol} IS NOT NULL AND ${eventTsCol} >= ? AND log_level IN ('ERROR', 'CRITICAL', 'FATAL')` + scope.sql,
+      `SELECT COUNT(*) as cnt FROM logs WHERE ${timestampCol} IS NOT NULL AND ${timestampCol} >= ? AND log_level IN ('ERROR', 'CRITICAL', 'FATAL')` + scope.sql,
       [todayStr + ' 00:00:00', ...scope.params]
     );
     const alertFilter = alertScope(req);
@@ -282,9 +282,9 @@ router.get('/trends', async (req, res) => {
     levels.forEach(l => { seriesData[l] = new Array(dates.length).fill(0); });
 
     // Requête optimisée avec dates de début/fin explicites
-    // Use event_timestamp when available, fallback to timestamp, then imported_at
+    // Use timestamp as primary, fallback to imported_at if timestamp is NULL
     const scope = userScope(req);
-    const timestampCol = 'COALESCE(event_timestamp, timestamp, imported_at)';
+    const timestampCol = 'COALESCE(timestamp, imported_at)';
     const [rows] = await pool.execute(
       `SELECT DATE_FORMAT(${timestampCol}, '%Y-%m-%d') AS day,
               log_level,
@@ -333,9 +333,9 @@ router.get('/trends', async (req, res) => {
     const [topFingerprints] = await pool.execute(
       `SELECT fingerprint, COUNT(*) as cnt
        FROM logs
-       WHERE ${timestampCol} IS NOT NULL 
-         AND ${timestampCol} >= ? 
-         AND ${timestampCol} <= ? 
+       WHERE timestamp IS NOT NULL 
+         AND timestamp >= ? 
+         AND timestamp <= ? 
          AND fingerprint IS NOT NULL${scope.sql}
        GROUP BY fingerprint
        ORDER BY cnt DESC
@@ -552,7 +552,7 @@ router.get('/today', async (req, res) => {
   try {
     const scope = userScope(req);
     const alertFilter = alertScope(req);
-    const timestampCol = 'COALESCE(event_timestamp, timestamp, imported_at)';
+    const timestampCol = 'COALESCE(timestamp, imported_at)';
     const start = new Date();
     start.setHours(0, 0, 0, 0);
     const end = new Date();

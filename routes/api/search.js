@@ -9,7 +9,7 @@ router.use(requireAuth);
 router.use(searchLimiter);
 
 const LOG_SEARCH_SELECT = `
-  id, timestamp, event_timestamp, imported_at, log_level, source, source_server, service,
+  id, timestamp, imported_at, log_level, source, source_server, service,
   message, normalized_message, event_type, fingerprint, module, error_type,
   stack_trace, target_user, log_user,
   COALESCE(log_source, source) AS log_source,
@@ -87,7 +87,7 @@ async function runFacetQuery(sql, params, whereClause) {
 }
 
 async function runLogsSearch(whereClause, params, limitNum, offsetNum) {
-  const orderBy = 'COALESCE(event_timestamp, timestamp, imported_at) DESC';
+  const orderBy = 'COALESCE(timestamp, imported_at) DESC';
   const fullSql = `SELECT ${LOG_SEARCH_SELECT} FROM logs WHERE ${whereClause} ORDER BY ${orderBy} LIMIT ${limitNum} OFFSET ${offsetNum}`;
   try {
     const [logs] = await pool.query(fullSql, params);

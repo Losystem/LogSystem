@@ -538,22 +538,22 @@ export async function getWatchStats(userId) {
     );
 
     const [topServices] = await conn.query(
-      `SELECT COALESCE(main_service, service, 'unknown') as service,
+      `SELECT COALESCE(service, 'unknown') as service,
               COUNT(*) as count,
               COUNT(CASE WHEN log_level IN ('ERROR', 'CRITICAL', 'FATAL') THEN 1 END) as error_count
        FROM logs
        WHERE user_id = ? AND imported_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-       GROUP BY COALESCE(main_service, service, 'unknown')
+       GROUP BY COALESCE(service, 'unknown')
        ORDER BY count DESC
        LIMIT 10`,
       [userId]
     );
 
     const [hourlyErrors] = await conn.query(
-      `SELECT HOUR(COALESCE(event_timestamp, timestamp, imported_at)) as hour, COUNT(*) as count
+      `SELECT HOUR(COALESCE(timestamp, imported_at)) as hour, COUNT(*) as count
        FROM logs
        WHERE user_id = ?
-         AND COALESCE(event_timestamp, timestamp, imported_at) >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+         AND COALESCE(timestamp, imported_at) >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
          AND log_level IN ('ERROR', 'CRITICAL', 'FATAL')
        GROUP BY hour`,
       [userId]
