@@ -35,7 +35,7 @@ SET @col_exists = (
 );
 
 SET @sql = IF(@col_exists = 0,
-  'ALTER TABLE `logs` ADD COLUMN `external_source_id` INT UNSIGNED DEFAULT NULL AFTER `batch_id`',
+  'ALTER TABLE `logs` ADD COLUMN `external_source_id` INT UNSIGNED DEFAULT NULL AFTER `user_id`',
   'SELECT ''logs.external_source_id already exists'' AS msg'
 );
 
