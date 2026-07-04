@@ -16,10 +16,10 @@ DELETE FROM users;
 -- Réactiver les contraintes de clé étrangère
 SET FOREIGN_KEY_CHECKS = 1;
 
--- Réinsérer les utilisateurs par défaut (schema.sql doesn't have updated_at column)
+-- Réinsérer les utilisateurs par défaut avec le hash correct pour "admin"
 INSERT INTO users (id, email, password_hash, display_name, role, is_active, created_at) VALUES
-(1, 'admin@logsystem.local', '$2b$12$YbmoletlqnsHFcq9BtEmie6jccXLZdtIyLw5NgoNJemJ2Q/XQsVa', 'Admin', 'admin', 1, NOW()),
-(2, 'user@logsystem.local', '$2b$12$YbmoletlqnsHFcq9BtEmie6jccXLZdtIyLw5NgoNJemJ2Q/XQsVa', 'User', 'user', 1, NOW());
+(1, 'admin@logsystem.local', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Admin', 'admin', 1, NOW()),
+(2, 'user@logsystem.local', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'User', 'user', 1, NOW());
 
 -- Réinsérer les règles d'alerte par défaut (schema.sql uses condition_type and condition_value, not conditions)
 INSERT INTO alert_rules (id, name, description, condition_type, condition_value, severity, is_active, created_by, created_at) VALUES
@@ -36,4 +36,4 @@ ALTER TABLE audit_log AUTO_INCREMENT = 1;
 ALTER TABLE import_jobs AUTO_INCREMENT = 1;
 ALTER TABLE error_groups AUTO_INCREMENT = 1;
 
-SELECT 'Plateforme réinitialisée avec succès' AS message;
+SELECT 'Plateforme réinitialisée avec succès (password: admin)' AS message;
