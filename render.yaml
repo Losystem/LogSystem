@@ -11,6 +11,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: RENDER
+        value: "true"
       # Base de données Aiven MySQL
       - key: DB_HOST
         sync: false
@@ -29,14 +31,16 @@ services:
       - key: DB_SSL_REJECT_UNAUTHORIZED
         value: "false"
       - key: DB_KEEPALIVE
-        value: "true"
+        value: "false"
+      - key: DB_CONNECTION_LIMIT
+        value: "5"
       # Sécurité
       - key: SESSION_SECRET
         generateValue: true
       - key: CSRF_SECRET
         generateValue: true
       - key: BCRYPT_ROUNDS
-        value: "12"
+        value: "10"
       # Application
       - key: PORT
         value: "10000"

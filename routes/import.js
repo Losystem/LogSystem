@@ -43,6 +43,7 @@ const upload = multer({
         new Error("Nom de fichier contient des caractères non autorisés"),
       );
 
+    const isRender = !!(process.env.RENDER || process.env.RENDER_SERVICE_NAME);
     const allowedMimeTypes = [
       "text/plain",
       "text/log",
@@ -54,12 +55,12 @@ const upload = multer({
       "application/gzip",
       "application/x-gzip",
       "application/x-tar",
-      "application/x-brotli",
-      "application/zstd",
-      "application/vnd.rar",
-      "application/x-rar-compressed",
       "application/x-7z-compressed",
     ];
+    // RAR MIME types not supported on Render
+    if (!isRender) {
+      allowedMimeTypes.push("application/vnd.rar", "application/x-rar-compressed");
+    }
     if (file.mimetype && !allowedMimeTypes.includes(file.mimetype)) {
       return cb(new Error(`Type MIME non supporté: ${file.mimetype}`));
     }
@@ -77,13 +78,12 @@ const upload = multer({
       "gzip",
       "tar",
       "tgz",
-      "br",
-      "brotli",
-      "zst",
-      "zstandard",
-      "rar",
       "7z",
     ];
+    // RAR not supported on Render (WASM not available)
+    if (!isRender) {
+      allowedExtensions.push("rar");
+    }
     if (!allowedExtensions.includes(ext)) {
       return cb(
         new Error(

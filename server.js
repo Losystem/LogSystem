@@ -233,7 +233,12 @@ async function start() {
 
   await startAlertEngine().catch(e => logger.error({ event: 'alertEngineStartFailed', message: e.message }));
   startRetentionScheduler();
-  await startWatcher().catch(e => logger.error({ event: 'watcherStartFailed', message: e.message }));
+  // Skip file watcher on Render (ephemeral filesystem)
+  if (!process.env.RENDER && !process.env.RENDER_SERVICE_NAME) {
+    await startWatcher().catch(e => logger.error({ event: 'watcherStartFailed', message: e.message }));
+  } else {
+    logger.info({ event: 'watcher_skipped', reason: 'Render environment - ephemeral filesystem' }, '[WATCHER]');
+  }
   const logsDir = (process.env.WATCH_DIRS || './logs').split(',')[0].trim();
   try { if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true }); } catch (_) {}
 }

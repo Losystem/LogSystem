@@ -68,10 +68,11 @@ function buildSslConfig() {
 const sslConfig = buildSslConfig();
 
 // On Vercel serverless: each lambda gets a fresh pool
+// On Render: persistent server with single pool
 // Aiven free tier = 25 max connections
-// With DB_CONNECTION_LIMIT=2: 12 concurrent lambdas max before exhaustion
 const isVercelEnv = !!(process.env.VERCEL || process.env.VERCEL_ENV);
-const defaultConnLimit = isVercelEnv ? 2 : 10; // 2 per lambda on Vercel
+const isRenderEnv = !!(process.env.RENDER || process.env.RENDER_SERVICE_NAME);
+const defaultConnLimit = isVercelEnv ? 2 : (isRenderEnv ? 5 : 10);
 
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
@@ -91,7 +92,7 @@ const dbConfig = {
 const pool = mysql.createPool(dbConfig);
 
 // Keepalive toutes les 5 minutes pour maintenir la connexion Aiven (hors Vercel)
-if (!isVercelEnv && process.env.DB_KEEPALIVE !== 'false') {
+if (!isVercelEnv && !isRenderEnv && process.env.DB_KEEPALIVE !== 'false') {
   setInterval(() => {
     pool.execute('SELECT 1').catch(err => {
       logger.warn({ event: 'db_keepalive_failed', error: err.message }, '[DB]');
