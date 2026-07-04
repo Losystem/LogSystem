@@ -230,7 +230,7 @@ async function start() {
   setAlertWorker(alertWorker);
 
   await startAlertEngine().catch(e => logger.error({ event: 'alertEngineStartFailed', message: e.message }));
-  startRetentionScheduler().catch?.(() => {});
+  startRetentionScheduler();
   await startWatcher().catch(e => logger.error({ event: 'watcherStartFailed', message: e.message }));
   const logsDir = (process.env.WATCH_DIRS || './logs').split(',')[0].trim();
   try { if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true }); } catch (_) {}
