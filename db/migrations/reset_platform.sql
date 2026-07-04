@@ -18,8 +18,8 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 -- Réinsérer les utilisateurs par défaut (schema.sql doesn't have updated_at column)
 INSERT INTO users (id, email, password_hash, display_name, role, is_active, created_at) VALUES
-(1, 'admin@logsystem.local', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6QJw/2Ej7W', 'Admin', 'admin', 1, NOW()),
-(2, 'user@logsystem.local', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6QJw/2Ej7W', 'User', 'user', 1, NOW());
+(1, 'admin@logsystem.local', '$2b$12$YbmoletlqnsHFcq9BtEmie6jccXLZdtIyLw5NgoNJemJ2Q/XQsVa', 'Admin', 'admin', 1, NOW()),
+(2, 'user@logsystem.local', '$2b$12$YbmoletlqnsHFcq9BtEmie6jccXLZdtIyLw5NgoNJemJ2Q/XQsVa', 'User', 'user', 1, NOW());
 
 -- Réinsérer les règles d'alerte par défaut (schema.sql uses condition_type and condition_value, not conditions)
 INSERT INTO alert_rules (id, name, description, condition_type, condition_value, severity, is_active, created_by, created_at) VALUES
