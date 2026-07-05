@@ -79,17 +79,34 @@ const upload = multer({
       "tar",
       "tgz",
       "7z",
+      "rar",
+      "bz2",
+      "xz",
+      "log.gz",
+      "log.bz2",
+      "log.xz",
+      "txt.gz",
+      "txt.bz2",
+      "txt.xz",
     ];
     // RAR not supported on Render (WASM not available)
-    if (!isRender) {
-      allowedExtensions.push("rar");
-    }
-    if (!allowedExtensions.includes(ext)) {
-      return cb(
-        new Error(
-          `Extension non supportée. Utilisez: ${allowedExtensions.join(", ")}`,
-        ),
-      );
+    if (isRender) {
+      const renderAllowed = allowedExtensions.filter(e => e !== 'rar');
+      if (!renderAllowed.includes(ext)) {
+        return cb(
+          new Error(
+            `Extension non supportée sur Render. Utilisez: ${renderAllowed.join(", ")}`,
+          ),
+        );
+      }
+    } else {
+      if (!allowedExtensions.includes(ext)) {
+        return cb(
+          new Error(
+            `Extension non supportée. Utilisez: ${allowedExtensions.join(", ")}`,
+          ),
+        );
+      }
     }
 
     cb(null, true);

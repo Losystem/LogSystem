@@ -13,9 +13,9 @@ const LOG_SEARCH_SELECT = `
   message, normalized_message, event_type, fingerprint, module, error_type,
   stack_trace, target_user, log_user,
   COALESCE(log_source, source) AS log_source,
-  COALESCE(source_system, log_source, source) AS source_system,
-  COALESCE(main_service, service) AS main_service,
-  COALESCE(hostname, source_server) AS hostname,
+  source,
+  service,
+  source_server,
   file_name, import_job_id, parser_format, timestamp_inferred, classification_confidence, created_time
 `.replace(/\s+/g, ' ').trim();
 
@@ -103,9 +103,9 @@ async function runLogsSearch(whereClause, params, limitNum, offsetNum) {
     return logs.map(row => ({
       ...row,
       log_source: row.source,
-      source_system: row.source,
-      main_service: row.service,
-      hostname: row.source_server
+      source: row.source,
+      service: row.service,
+      source_server: row.source_server
     }));
   }
 }
@@ -139,9 +139,7 @@ router.get('/', async (req, res) => {
       service = null,
       module = null,
       source_server = null,
-      source_system = null,
-      main_service = null,
-      hostname = null,
+      source = null,
       target_user = null,
       fingerprint = null,
       from_timestamp = null,
@@ -192,9 +190,6 @@ router.get('/', async (req, res) => {
     if (service) {
       whereConditions.push('service = ?');
       params.push(service);
-    } else if (main_service) {
-      whereConditions.push('service = ?');
-      params.push(main_service);
     }
 
     if (module) {
@@ -210,9 +205,9 @@ router.get('/', async (req, res) => {
       params.push(hostname);
     }
 
-    if (source_system) {
+    if (source) {
       whereConditions.push('source = ?');
-      params.push(source_system);
+      params.push(source);
     }
 
     if (target_user) {

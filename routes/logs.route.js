@@ -262,7 +262,7 @@ router.get('/analysis/:fingerprint', async (req, res) => {
     const scope = userScope(req);
     const { fingerprint } = req.params;
 
-    const tscol = 'COALESCE(event_timestamp, timestamp, imported_at)';
+    const tscol = 'COALESCE(timestamp, imported_at)';
     const [groups] = await pool.execute(
       `SELECT fingerprint, COUNT(*) as occurrences,
               MIN(${tscol}) as first_seen, MAX(${tscol}) as last_seen,
@@ -293,7 +293,7 @@ router.get('/analysis/:fingerprint', async (req, res) => {
     const [samples] = await pool.execute(
       `SELECT error_type, message, stack_trace, log_level, imported_at, created_time,
               source_server, service,
-              COALESCE(event_timestamp, timestamp, imported_at) AS ts
+              COALESCE(timestamp, imported_at) AS ts
        FROM logs
        WHERE fingerprint = ? ${scope.sql}
        ORDER BY ts DESC LIMIT 1`,

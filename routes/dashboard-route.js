@@ -98,13 +98,13 @@ router.get('/summary', async (req, res) => {
     const [total] = await pool.execute('SELECT COUNT(*) as cnt FROM logs WHERE 1=1' + scope.sql, [...scope.params]);
     
     /**
-     * todayCount: logs whose event occurred today (event_timestamp).
+     * todayCount: logs whose event occurred today (timestamp).
      * importedTodayCount: logs imported today (ingestion activity).
      */
     const todayStr = new Date().toISOString().slice(0, 10);
-    const eventTsCol = 'COALESCE(event_timestamp, timestamp)';
+    const timestampCol = 'COALESCE(timestamp, imported_at)';
     const [today] = await pool.execute(
-      `SELECT COUNT(*) as cnt FROM logs WHERE ${eventTsCol} >= ?` + scope.sql,
+      `SELECT COUNT(*) as cnt FROM logs WHERE ${timestampCol} >= ?` + scope.sql,
       [todayStr + ' 00:00:00', ...scope.params]
     );
     const [importedToday] = await pool.execute(
@@ -112,7 +112,7 @@ router.get('/summary', async (req, res) => {
       [todayStr + ' 00:00:00', ...scope.params]
     );
     const [errorCount] = await pool.execute(
-      `SELECT COUNT(*) as cnt FROM logs WHERE ${eventTsCol} >= ? AND log_level IN ('ERROR', 'CRITICAL', 'FATAL')` + scope.sql,
+      `SELECT COUNT(*) as cnt FROM logs WHERE ${timestampCol} >= ? AND log_level IN ('ERROR', 'CRITICAL', 'FATAL')` + scope.sql,
       [todayStr + ' 00:00:00', ...scope.params]
     );
     const alertFilter = alertScope(req);
@@ -129,7 +129,7 @@ router.get('/summary', async (req, res) => {
       scope.params
     );
     const [sourceCount] = await pool.execute(
-      'SELECT COUNT(DISTINCT COALESCE(source_system, source)) as cnt FROM logs WHERE COALESCE(source_system, source) IS NOT NULL AND COALESCE(source_system, source) != \'\'' + scope.sql,
+      'SELECT COUNT(DISTINCT COALESCE(source, log_source)) as cnt FROM logs WHERE COALESCE(source, log_source) IS NOT NULL AND COALESCE(source, log_source) != \'\'' + scope.sql,
       scope.params
     );
     const [levelRows] = await pool.execute(
@@ -268,9 +268,9 @@ router.get('/trends', async (req, res) => {
     levels.forEach(l => { seriesData[l] = new Array(dates.length).fill(0); });
 
     // Requête optimisée avec dates de début/fin explicites
-    // Use event_timestamp when available, fallback to timestamp, then imported_at
+    // Use timestamp as primary, fallback to imported_at if timestamp is NULL
     const scope = userScope(req);
-    const timestampCol = 'COALESCE(event_timestamp, timestamp, imported_at)';
+    const timestampCol = 'COALESCE(timestamp, imported_at)';
     const [rows] = await pool.execute(
       `SELECT DATE_FORMAT(${timestampCol}, '%Y-%m-%d') AS day,
               log_level,
@@ -474,7 +474,7 @@ router.get('/today', async (req, res) => {
   try {
     const scope = userScope(req);
     const alertFilter = alertScope(req);
-    const timestampCol = 'COALESCE(event_timestamp, timestamp, imported_at)';
+    const timestampCol = 'COALESCE(timestamp, imported_at)';
     const start = new Date();
     start.setHours(0, 0, 0, 0);
     const end = new Date();

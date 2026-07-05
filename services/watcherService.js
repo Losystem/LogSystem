@@ -249,18 +249,14 @@ async function processLogFile(filePath, incremental = true) {
         entry.timestamp_inferred,
         entry.classification_confidence,
         entry.imported_at || null,
-        entry.source_system || null,
-        entry.main_service || null,
-        entry.hostname || null,
-        entry.log_origin || null,
       ]);
 
       await conn.query(
         `INSERT IGNORE INTO logs (
-          raw_log, timestamp, event_timestamp, created_time, timezone, log_level, source, source_server, service, message, normalized_message,
+          raw_log, timestamp, created_time, timezone, log_level, source, source_server, service, message, normalized_message,
           event_type, fingerprint, user_id, source_type, client_ip, module, error_type, stack_trace,
           target_user, parser_format, timestamp_inferred, classification_confidence,
-          imported_at, source_system, main_service, hostname, log_origin
+          imported_at
         ) VALUES ?`,
         [logValues]
       );

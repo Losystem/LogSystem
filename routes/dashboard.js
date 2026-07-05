@@ -135,7 +135,7 @@ router.get('/summary', async (req, res) => {
       scope.params
     );
     var [sourceCount] = await pool.execute(
-      'SELECT COUNT(DISTINCT COALESCE(source_system, source)) as cnt FROM logs WHERE COALESCE(source_system, source) IS NOT NULL AND COALESCE(source_system, source) != \'\'' + scope.sql,
+      'SELECT COUNT(DISTINCT COALESCE(source, log_source)) as cnt FROM logs WHERE COALESCE(source, log_source) IS NOT NULL AND COALESCE(source, log_source) != \'\'' + scope.sql,
       scope.params
     );
     var [levelRows] = await pool.execute(
@@ -243,7 +243,7 @@ router.get('/trends', async (req, res) => {
       const seriesData = {};
       levels.forEach(l => { seriesData[l] = new Array(24).fill(0); });
       const scope = userScope(req);
-      const timestampCol = 'COALESCE(event_timestamp, timestamp, imported_at)';
+      const timestampCol = 'COALESCE(timestamp, imported_at)';
       const startSql = startDate.toISOString().slice(0, 19).replace('T', ' ');
       const endSql = endDate.toISOString().slice(0, 19).replace('T', ' ');
       const [rows] = await pool.execute(

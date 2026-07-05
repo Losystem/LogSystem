@@ -211,9 +211,9 @@
             return '<tr data-id="'+r.id+'">'
               + tsCell
               + '<td>'+badge(r.log_level)+'</td>'
-              + '<td>'+esc(r.source_system || r.log_source || r.source)+'</td>'
-              + '<td class="col-hide-mobile">'+esc(r.main_service || '—')+'</td>'
-              + '<td class="col-hide-mobile">'+esc(r.hostname || r.source_server || '—')+'</td>'
+              + '<td>'+esc(r.source || r.log_source || '—')+'</td>'
+              + '<td class="col-hide-mobile">'+esc(r.service || '—')+'</td>'
+              + '<td class="col-hide-mobile">'+esc(r.source_server || '—')+'</td>'
               + userCell
               + importCell
               + '<td class="text-truncate">'+esc(r.message)+'</td>'

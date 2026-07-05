@@ -84,7 +84,7 @@ async function evalRule(rule, targetUserId = rule.created_by || null) {
   const windowStart = new Date(now.getTime() - rule.time_window_minutes * 60000);
   const conditionType = rule.condition_type;
   const conditionValue = rule.condition_value;
-  const tsCol = 'COALESCE(event_timestamp, timestamp, imported_at)';
+  const tsCol = 'COALESCE(timestamp, imported_at)';
   
   const userFilter = targetUserId ? 'AND user_id = ?' : 'AND 1=0';
   const scopedParams = targetUserId ? [targetUserId] : [];
@@ -233,7 +233,7 @@ async function createAlert(rule, message, targetUserId = null) {
     const params = userId ? [windowStart, userId] : [windowStart];
     
     // Get count and sample logs
-    const tsCol = 'COALESCE(event_timestamp, timestamp, imported_at)';
+    const tsCol = 'COALESCE(timestamp, imported_at)';
     const [samples] = await pool.execute(
       `SELECT id, timestamp, message, module, target_user FROM logs 
        WHERE ${tsCol} >= ? ${userFilter} 

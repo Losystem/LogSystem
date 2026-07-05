@@ -109,17 +109,16 @@ router.post('/ingest', async (req, res) => {
         // Insert log with scope
         const insertSql = `
           INSERT INTO logs (
-            timestamp, event_timestamp, created_time, imported_at, log_level, 
+            timestamp, created_time, imported_at, log_level, 
             message, normalized_message, event_type, fingerprint, service, 
             module, source, source_server, error_type, stack_trace, 
             target_user, log_user, user_id, parser_format, source_type, 
             timestamp_inferred, classification_confidence, batch_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ` + scope.sql;
 
         const insertParams = [
           enriched.timestamp,
-          enriched.timestamp, // event_timestamp same as timestamp for HTTP ingest
           enriched.created_time,
           enriched.imported_at,
           enriched.log_level,

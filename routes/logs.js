@@ -268,8 +268,8 @@ router.get('/analysis/:fingerprint', async (req, res) => {
 
     const [groups] = await pool.execute(
       `SELECT fingerprint, COUNT(*) as occurrences,
-              MIN(COALESCE(event_timestamp, timestamp, imported_at)) as first_seen,
-              MAX(COALESCE(event_timestamp, timestamp, imported_at)) as last_seen,
+              MIN(COALESCE(timestamp, imported_at)) as first_seen,
+              MAX(COALESCE(timestamp, imported_at)) as last_seen,
               MAX(log_level) as severity_max,
               COUNT(DISTINCT service) as service_count,
               COUNT(DISTINCT source_server) as source_server_count

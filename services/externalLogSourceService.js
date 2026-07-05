@@ -306,14 +306,13 @@ async function ingestLogs(logs, source) {
 
         await conn.execute(
           `INSERT INTO logs (
-            timestamp, event_timestamp, created_time, imported_at, log_level, 
+            timestamp, created_time, imported_at, log_level, 
             message, normalized_message, event_type, fingerprint, service, 
             module, source, source_server, error_type, stack_trace, 
             target_user, log_user, user_id, parser_format, source_type, 
             timestamp_inferred, classification_confidence, batch_id, external_source_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
-            enriched.timestamp,
             enriched.timestamp,
             enriched.created_time,
             enriched.imported_at,

@@ -55,9 +55,9 @@
     html += '</p>';
     if (log.imported_at) html += '<p><strong>Date d\'import:</strong> ' + fmtDT(log.imported_at) + '</p>';
     html += '<p><strong>Niveau:</strong> ' + badge(log.log_level) + '</p>';
-    html += '<p><strong>Source:</strong> ' + esc(log.source_system || log.log_source || log.source || '—') + '</p>';
-    html += '<p><strong>Service principal:</strong> ' + esc(log.main_service || '—') + '</p>';
-    html += '<p><strong>Hôte:</strong> ' + esc(log.hostname || log.source_server || '—') + '</p>';
+    html += '<p><strong>Source:</strong> ' + esc(log.source || log.log_source || '—') + '</p>';
+    html += '<p><strong>Service:</strong> ' + esc(log.service || '—') + '</p>';
+    html += '<p><strong>Hôte:</strong> ' + esc(log.source_server || '—') + '</p>';
     html += '<p><strong>Service:</strong> ' + esc(log.service || '—') + '</p>';
     html += '<p><strong>Utilisateur:</strong> ' + esc(log.log_user || log.target_user || '—') + '</p>';
     if (log.log_origin) html += '<p><strong>Origine:</strong> ' + esc(log.log_origin) + '</p>';
