@@ -87,6 +87,11 @@ const dbConfig = {
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
   ssl: sslConfig,
+  // Memory leak protection
+  maxIdle: Math.max(1, Math.floor(parseInt(process.env.DB_CONNECTION_LIMIT || String(defaultConnLimit), 10) / 2)),
+  idleTimeout: 60000,
+  // Query timeout protection (30 seconds)
+  timeout: 30000
 };
 
 const pool = mysql.createPool(dbConfig);
