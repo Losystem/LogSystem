@@ -12,7 +12,6 @@ const LOG_SEARCH_SELECT = `
   id, timestamp, imported_at, log_level, source, source_server, service,
   message, normalized_message, event_type, fingerprint, module, error_type,
   stack_trace, target_user, log_user,
-  COALESCE(log_source, source) AS log_source,
   source,
   service,
   source_server,

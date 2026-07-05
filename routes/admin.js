@@ -209,6 +209,14 @@ router.get("/alert-rules", async (req, res) => {
     );
     res.json(rows);
   } catch (e) {
+    if (/Unknown column.*is_global/i.test(e.message)) {
+      // Fallback for databases without is_global column
+      const [rows] = await pool.execute(
+        "SELECT ar.*, u.email as created_by_email FROM alert_rules ar LEFT JOIN users u ON ar.created_by = u.id WHERE ar.created_by = ? ORDER BY ar.created_at DESC",
+        [req.session.user.id],
+      );
+      return res.json(rows);
+    }
     res.status(500).json({ error: "Erreur serveur" });
   }
 });

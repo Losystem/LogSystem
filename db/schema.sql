@@ -97,6 +97,8 @@ CREATE TABLE `alert_rules` (
   `severity` ENUM('low','medium','high','critical') DEFAULT 'medium',
   `cooldown_minutes` INT DEFAULT 30,
   `is_active` TINYINT(1) DEFAULT 1,
+  `is_global` TINYINT(1) DEFAULT 0,
+  `applicable_to_users` JSON NULL,
   `created_by` INT,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `fk_alert_rules_user` FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL

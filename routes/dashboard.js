@@ -135,7 +135,7 @@ router.get('/summary', async (req, res) => {
       scope.params
     );
     var [sourceCount] = await pool.execute(
-      'SELECT COUNT(DISTINCT COALESCE(source, log_source)) as cnt FROM logs WHERE COALESCE(source, log_source) IS NOT NULL AND COALESCE(source, log_source) != \'\'' + scope.sql,
+      'SELECT COUNT(DISTINCT source) as cnt FROM logs WHERE source IS NOT NULL AND source != \'\'' + scope.sql,
       scope.params
     );
     var [levelRows] = await pool.execute(

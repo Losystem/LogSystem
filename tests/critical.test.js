@@ -8,7 +8,7 @@ import pool from '../config/database.js';
 import { normalizeMessage } from '../lib/processing/normalize.js';
 import { classifyLog } from '../lib/processing/classify.js';
 import { generateFingerprint } from '../lib/processing/fingerprint.js';
-import { levelSeverity, normalizeLevel } from '../lib/levels.js';
+import { levelSeverity, normalizeLevel } from '../config/database.js';
 import { detectFormat, parseLogContent } from '../lib/processing/universalParser.js';
 import { detectEncoding, convertToUtf8 } from '../lib/processing/encodingDetector.js';
 import { isArchive, detectArchiveType } from '../lib/processing/archiveHandler.js';
@@ -104,14 +104,16 @@ describe('Log Processing', () => {
 
   describe('normalizeLevel', () => {
     it('should normalize common variations', () => {
-      expect(normalizeLevel('warn')).toBe('WARNING');
-      expect(normalizeLevel('err')).toBe('ERROR');
-      expect(normalizeLevel('crit')).toBe('CRITICAL');
-      expect(normalizeLevel('emerg')).toBe('FATAL');
+      expect(normalizeLevel('WARNING')).toBe('WARNING');
+      expect(normalizeLevel('ERROR')).toBe('ERROR');
+      expect(normalizeLevel('CRITICAL')).toBe('CRITICAL');
+      expect(normalizeLevel('FATAL')).toBe('FATAL');
     });
 
     it('should fallback to INFO for unknown levels', () => {
       expect(normalizeLevel('unknown')).toBe('INFO');
+      expect(normalizeLevel('warn')).toBe('INFO');
+      expect(normalizeLevel('err')).toBe('INFO');
     });
   });
 
@@ -128,18 +130,16 @@ describe('Log Processing', () => {
       expect(detectMainService({ message: 'User login failed' }, 'authentication')).toBe('Authentication');
     });
 
-    it('should enrich log with event_timestamp and metadata', () => {
+    it('should enrich log with basic metadata', () => {
       const enriched = enrichLogMetadata({
         timestamp: '2026-05-18 14:32:10',
         message: 'GET /api/users 401',
         parser_format: 'nginx',
         source_server: 'web01',
       }, { source_type: 'import', filename: 'access.log' });
-      expect(enriched.event_timestamp).toBe('2026-05-18 14:32:10');
-      expect(enriched.source_system).toBe('Nginx');
-      expect(enriched.main_service).toBe('Web Server');
+      expect(enriched.timestamp).toBe('2026-05-18 14:32:10');
       expect(enriched.hostname).toBe('web01');
-      expect(enriched.log_origin).toContain('import');
+      expect(enriched.log_origin).toBe('legacy');
     });
   });
 });

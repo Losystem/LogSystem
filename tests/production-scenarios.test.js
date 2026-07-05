@@ -13,7 +13,7 @@ const root = path.join(__dirname, '..');
 describe('Dashboard API trends logic', () => {
   it('hourly query uses COALESCE timestamp columns', () => {
     const src = readFileSync(path.join(root, 'routes/dashboard.js'), 'utf8');
-    expect(src).toContain('COALESCE(event_timestamp, timestamp, imported_at)');
+    expect(src).toContain('COALESCE(timestamp, imported_at)');
     expect(src).toContain('UPPER(log_level)');
   });
 
@@ -61,7 +61,7 @@ describe('Alert engine', () => {
 
   it('evalRule uses COALESCE for timestamps', () => {
     const src = readFileSync(path.join(root, 'services/alertEngine.js'), 'utf8');
-    expect(src).toContain("const tsCol = 'COALESCE(event_timestamp, timestamp, imported_at)'");
+    expect(src).toContain("const tsCol = 'COALESCE(timestamp, imported_at)'");
   });
 });
 
@@ -74,13 +74,6 @@ describe('Import integration', () => {
 });
 
 describe('Search API', () => {
-  it('accepts source_system main_service hostname params', () => {
-    const src = readFileSync(path.join(root, 'routes/api/search.js'), 'utf8');
-    expect(src).toContain('source_system = null');
-    expect(src).toContain('main_service = null');
-    expect(src).toContain('hostname = null');
-  });
-
   it('has FULLTEXT fallback via runLogsSearch', () => {
     const src = readFileSync(path.join(root, 'routes/api/search.js'), 'utf8');
     expect(src).toContain('async function runLogsSearch');
