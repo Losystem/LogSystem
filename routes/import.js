@@ -56,11 +56,9 @@ const upload = multer({
       "application/x-gzip",
       "application/x-tar",
       "application/x-7z-compressed",
+      "application/vnd.rar",
+      "application/x-rar-compressed",
     ];
-    // RAR MIME types not supported on Render
-    if (!isRender) {
-      allowedMimeTypes.push("application/vnd.rar", "application/x-rar-compressed");
-    }
     if (file.mimetype && !allowedMimeTypes.includes(file.mimetype)) {
       return cb(new Error(`Type MIME non supporté: ${file.mimetype}`));
     }
@@ -89,24 +87,13 @@ const upload = multer({
       "txt.bz2",
       "txt.xz",
     ];
-    // RAR not supported on Render (WASM not available)
-    if (isRender) {
-      const renderAllowed = allowedExtensions.filter(e => e !== 'rar');
-      if (!renderAllowed.includes(ext)) {
-        return cb(
-          new Error(
-            `Extension non supportée sur Render. Utilisez: ${renderAllowed.join(", ")}`,
-          ),
-        );
-      }
-    } else {
-      if (!allowedExtensions.includes(ext)) {
-        return cb(
-          new Error(
-            `Extension non supportée. Utilisez: ${allowedExtensions.join(", ")}`,
-          ),
-        );
-      }
+
+    if (!allowedExtensions.includes(ext)) {
+      return cb(
+        new Error(
+          `Extension non supportée. Utilisez: ${allowedExtensions.join(", ")}`,
+        ),
+      );
     }
 
     cb(null, true);

@@ -243,47 +243,87 @@
     }
     const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
-    // ─── Mode polling (SSE non compatible Vercel serverless) ──────────────
-    function startPolling() {
-      if (pollingTimer) clearInterval(pollingTimer);
-      
+    // ─── Mode SSE (Server-Sent Events) pour Render (serveur persistant) ──────────────
+    let eventSource = null;
+
+    function startSSE() {
+      if (eventSource) {
+        eventSource.close();
+      }
+
       // Récupération initiale des derniers logs
       fetchNewLogs();
       fetchStats();
-      
-      // Polling des nouveaux logs toutes les 5s
-      pollingTimer = setInterval(() => {
-        if (!isPaused) {
-          fetchNewLogs();
+
+      // Connexion SSE pour le flux temps réel
+      eventSource = new EventSource('/api/alerts/stream');
+
+      eventSource.onopen = function() {
+        document.querySelector('.status-indicator').style.background = '#22c55e';
+        updateConnectionStatus('connected');
+        reconnectDelay = 2000;
+      };
+
+      eventSource.addEventListener('log', function(e) {
+        try {
+          const log = JSON.parse(e.data);
+          if (log && log.id) {
+            addLogEntry(log);
+          }
+        } catch (err) {
+          console.warn('[WatchLog] SSE log parse error:', err);
         }
-      }, 5000);
-      
-      // Polling des stats toutes les 15s
+      });
+
+      eventSource.addEventListener('alert', function(e) {
+        try {
+          const alert = JSON.parse(e.data);
+          if (alert) {
+            prependAlertItem(alert);
+          }
+        } catch (err) {
+          console.warn('[WatchLog] SSE alert parse error:', err);
+        }
+      });
+
+      eventSource.onerror = function(err) {
+        console.warn('[WatchLog] SSE error:', err);
+        document.querySelector('.status-indicator').style.background = '#f59e0b';
+        updateConnectionStatus('reconnecting');
+        
+        // Reconnexion automatique avec backoff
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+        
+        setTimeout(function() {
+          if (!isPaused) {
+            startSSE();
+          }
+        }, reconnectDelay);
+        
+        reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+      };
+
+      // Polling des stats toutes les 15s (SSE ne fournit que les logs/alertes)
       setInterval(fetchStats, 15000);
-      
-      document.querySelector('.status-indicator').style.background = '#22c55e';
-      updateConnectionStatus('connected');
     }
 
     function fetchNewLogs() {
-      // Appel à l'endpoint de logs existant avec filtre sur l'ID
+      // Récupération initiale des derniers logs
       var url = '/api/logs?limit=50&sort=id&order=desc';
       if (lastLogId > 0) url += '&after_id=' + lastLogId;
       
       api.get(url).then(function(d) {
         var logs = d && d.data ? d.data : (Array.isArray(d) ? d : []);
         if (logs.length > 0) {
-          // Mettre à jour le dernier ID connu
           lastLogId = Math.max(lastLogId, ...logs.map(l => l.id || 0));
-          // N'ajouter que les vrais nouveaux logs (id > ancien lastLogId)
           addLogEntries(logs.reverse());
           scheduleLiveRefresh();
         }
-        reconnectDelay = 2000; // Reset backoff
-        document.querySelector('.status-indicator').style.background = '#22c55e';
       }).catch(function(err) {
-        console.warn('[WatchLog] Polling error:', err);
-        document.querySelector('.status-indicator').style.background = '#f59e0b';
+        console.warn('[WatchLog] Initial fetch error:', err);
       });
     }
 
@@ -299,7 +339,10 @@
     }
 
     function stopPolling() {
-      if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
       document.querySelector('.status-indicator').style.background = '#ef4444';
       updateConnectionStatus('disconnected');
     }
@@ -917,7 +960,7 @@
 
     window.addEventListener('load', () => {
       mountIcons();
-      startPolling();
+      startSSE();
       
       // Démarrer les refreshs adaptatifs
       scheduleTrendsRefresh();

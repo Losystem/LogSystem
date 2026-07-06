@@ -96,8 +96,9 @@ const dbConfig = {
 
 const pool = mysql.createPool(dbConfig);
 
-// Keepalive toutes les 5 minutes pour maintenir la connexion Aiven (hors Vercel)
-if (!isVercelEnv && !isRenderEnv && process.env.DB_KEEPALIVE !== 'false') {
+// Keepalive toutes les 5 minutes pour maintenir la connexion Aiven
+// Nécessaire sur Render aussi car le timeout de 8h vient d'Aiven, pas de Render
+if (!isVercelEnv && process.env.DB_KEEPALIVE !== 'false') {
   setInterval(() => {
     pool.execute('SELECT 1').catch(err => {
       logger.warn({ event: 'db_keepalive_failed', error: err.message }, '[DB]');

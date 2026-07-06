@@ -31,7 +31,7 @@ services:
       - key: DB_SSL_REJECT_UNAUTHORIZED
         value: "false"
       - key: DB_KEEPALIVE
-        value: "false"
+        value: "true"
       - key: DB_CONNECTION_LIMIT
         value: "5"
       # Sécurité
