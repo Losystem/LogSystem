@@ -229,7 +229,7 @@ DEALLOCATE PREPARE stmt;
 -- On vérifie d'abord si la colonne a le bon type
 SET @col_type = (SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
                  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'error_groups' AND COLUMN_NAME = 'status');
-SET @sql = IF(@col_type NOT LIKE "%''open'',''resolved'',''returned''%",
+SET @sql = IF(@col_type NOT LIKE '%''open'',''resolved'',''returned''%',
   'ALTER TABLE error_groups MODIFY COLUMN status ENUM(''open'',''resolved'',''returned'') DEFAULT ''open''',
   'SELECT ''Column error_groups.status already has correct type''');
 PREPARE stmt FROM @sql;
