@@ -199,9 +199,6 @@ router.get('/', async (req, res) => {
     if (source_server) {
       whereConditions.push('source_server = ?');
       params.push(source_server);
-    } else if (hostname) {
-      whereConditions.push('source_server = ?');
-      params.push(hostname);
     }
 
     if (source) {

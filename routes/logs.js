@@ -284,7 +284,7 @@ router.get('/analysis/:fingerprint', async (req, res) => {
 
     const group = groups[0];
     const [affected] = await pool.execute(
-      `SELECT DISTINCT module, target_user, source_server, service FROM logs
+      `SELECT DISTINCT module, target_user, source_server, service, timestamp FROM logs
        WHERE fingerprint = ? ${scope.sql}
        ORDER BY timestamp DESC LIMIT 50`,
       [fingerprint, ...scope.params]
