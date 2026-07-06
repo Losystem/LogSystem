@@ -33,6 +33,7 @@ import importRoutes, { multerErrorHandler } from './routes/import.js';
 import dashboardRoutes from './routes/dashboard.js';
 import adminRoutes from './routes/admin.js';
 import searchApiRoutes from './routes/api/search.js';
+import recommendationsRoutes from './routes/recommendations.js';
 import { alertWorker } from './workers/alertWorker.js';
 import { startAlertEngine, setAlertWorker, stopAlertEngine } from './services/alertEngine.js';
 import { startRetentionScheduler } from './services/retentionService.js';
@@ -181,6 +182,7 @@ app.use('/api/dashboard', requireAuth, scopeGuard, dashboardRoutes);
 app.use('/api/admin', requireAuth, scopeGuard, adminRoutes);
 app.use('/api/search', requireAuth, scopeGuard, searchApiRoutes);
 app.use('/api/error-suggestions', requireAuth, scopeGuard, errorSuggestionsRoutes);
+app.use('/api/recommendations', requireAuth, scopeGuard, recommendationsRoutes);
 
 app.get('/api/watchdogs/status', requireAuth, (req, res) => {
   res.json(getWatcherStatus());

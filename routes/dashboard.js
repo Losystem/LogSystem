@@ -155,8 +155,8 @@ router.get('/summary', async (req, res) => {
     const data = {
       // camelCase pour le frontend Next.js
       totalLogs: Number(total[0].cnt),
-      todayCount: Number(today[0].cnt),
-      todayLogs: Number(today[0].cnt),
+      todayCount: Number(importedToday[0].cnt), // FIX: Use importedTodayCount as logs today
+      todayLogs: Number(importedToday[0].cnt), // FIX: Use importedTodayCount as logs today
       importedTodayCount: Number(importedToday[0].cnt),
       errorCount: Number(errorCount[0].cnt),
       unreadAlerts: Number(unreadAlerts[0].cnt),
@@ -168,7 +168,7 @@ router.get('/summary', async (req, res) => {
       sourceCount: Number(sourceCount[0].cnt),
       // snake_case pour compatibilité
       total_logs: Number(total[0].cnt),
-      today_logs: Number(today[0].cnt),
+      today_logs: Number(importedToday[0].cnt), // FIX: Use importedTodayCount as logs today
       imported_today_count: Number(importedToday[0].cnt),
       error_count: Number(errorCount[0].cnt),
       unread_alerts: Number(unreadAlerts[0].cnt),

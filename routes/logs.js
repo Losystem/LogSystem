@@ -308,7 +308,7 @@ router.get('/analysis/:fingerprint', async (req, res) => {
       [fingerprint, ...scope.params]
     );
     const meta = metaRows[0] || {};
-    const suggestion = generateSuggestion(sample.error_type, sample.message, sample.stack_trace);
+    const suggestion = await generateSuggestion(sample.error_type, sample.message, sample.stack_trace);
 
     res.json({
       fingerprint,
@@ -521,11 +521,28 @@ router.delete('/alerts/:id', async (req, res) => {
 });
 
 // Helper function for error suggestions (AMÉLIORATION 6)
-function generateSuggestion(errorType, message, stackTrace) {
+async function generateSuggestion(errorType, message, stackTrace) {
   const msg = String(message || '').toLowerCase();
   const stack = String(stackTrace || '').toLowerCase();
   const err = String(errorType || '').toUpperCase();
   
+  // Try to get recommendation from database first
+  try {
+    const [rows] = await pool.execute(
+      `SELECT recommendation FROM error_recommendations 
+       WHERE is_active = 1 
+       AND (error_type = ? OR error_type IS NULL)
+       ORDER BY priority DESC LIMIT 1`,
+      [err]
+    );
+    if (rows.length > 0 && rows[0].recommendation) {
+      return rows[0].recommendation;
+    }
+  } catch (e) {
+    logger.warn({ event: 'recommendation_query_failed', error: e.message }, '[LOGS]');
+  }
+  
+  // Fallback to hardcoded suggestions
   const suggestions = {
     'ECONNREFUSED': 'Vérifiez que le service cible est démarré et accessible sur le port indiqué.',
     'ETIMEDOUT': 'Augmentez le timeout ou vérifiez la latence réseau vers l\'hôte distant.',
