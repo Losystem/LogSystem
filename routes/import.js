@@ -27,7 +27,7 @@ const RETURN_GAP_DAYS = parseInt(process.env.ERROR_RETURN_GAP_DAYS || "7", 10);
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: parseInt(process.env.UPLOAD_MAX_SIZE || process.env.IMPORT_MAX_SIZE || "524288000", 10),
+    fileSize: Infinity,
     files: parseInt(process.env.UPLOAD_MAX_FILES || "10", 10),
   },
   fileFilter: (req, file, cb) => {
@@ -570,17 +570,6 @@ router.post(
       if (!req.file)
         return res.status(400).json({ error: "Aucun fichier fourni" });
 
-      const isVercelEnv = !!(process.env.VERCEL || process.env.VERCEL_ENV);
-      const defaultMax = isVercelEnv ? 4500000 : 524288000;
-      const maxSize = parseInt(process.env.UPLOAD_MAX_SIZE || process.env.IMPORT_MAX_SIZE || String(defaultMax), 10);
-      if (req.file.size > maxSize) {
-        return res.status(413).json({
-          error: isVercelEnv
-            ? 'Fichier trop gros (4.5 MB max sur Vercel). Compressez ou extrayez localement.'
-            : 'Fichier trop gros (500 MB max). Divisez en plusieurs archives.',
-        });
-      }
-
       const jobId = uuidv4();
       const userId = req.session.user.id;
       const source = req.body.source || null;
@@ -792,7 +781,7 @@ export function multerErrorHandler(err, req, res, next) {
   if (err && err.code && err.code.startsWith('LIMIT_')) {
     // MulterError : fichier trop grand, trop de fichiers, champ inconnu...
     const messages = {
-      LIMIT_FILE_SIZE: 'Fichier trop gros (500 MB max). Divisez en plusieurs archives.',
+      LIMIT_FILE_SIZE: 'Erreur de téléversement',
       LIMIT_FILE_COUNT: 'Trop de fichiers',
       LIMIT_UNEXPECTED_FILE: 'Champ de fichier inattendu',
     };
