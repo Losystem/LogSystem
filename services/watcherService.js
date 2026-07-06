@@ -492,7 +492,7 @@ export async function getWatchStats(userId) {
   try {
     conn = await pool.getConnection();
 
-    // Stats for last hour
+    // Stats for today (imports of the day)
     const [stats] = await conn.query(
       `SELECT 
         COUNT(*) as total_logs,
@@ -508,26 +508,26 @@ export async function getWatchStats(userId) {
         MIN(timestamp) as first_log,
         MAX(timestamp) as last_log
        FROM logs 
-       WHERE user_id = ? AND imported_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)`,
+       WHERE user_id = ? AND imported_at >= CURDATE()`,
       [userId]
     );
 
-    // Top errors
+    // Top errors (today)
     const [topErrors] = await conn.query(
       `SELECT fingerprint, ANY_VALUE(event_type) as event_type, COUNT(*) as count, MAX(timestamp) as last_seen
        FROM logs
-       WHERE user_id = ? AND log_level IN ('ERROR', 'CRITICAL', 'FATAL') AND imported_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+       WHERE user_id = ? AND log_level IN ('ERROR', 'CRITICAL', 'FATAL') AND imported_at >= CURDATE()
        GROUP BY fingerprint
        ORDER BY count DESC
        LIMIT 5`,
       [userId]
     );
 
-    // Throughput per minute (last 60 minutes)
+    // Throughput per minute (today)
     const [throughput] = await conn.query(
       `SELECT DATE_FORMAT(imported_at, '%Y-%m-%d %H:%i') as minute, COUNT(*) as count
        FROM logs
-       WHERE user_id = ? AND imported_at >= DATE_SUB(NOW(), INTERVAL 60 MINUTE)
+       WHERE user_id = ? AND imported_at >= CURDATE()
        GROUP BY minute
        ORDER BY minute DESC`,
       [userId]
@@ -538,7 +538,7 @@ export async function getWatchStats(userId) {
               COUNT(*) as count,
               COUNT(CASE WHEN log_level IN ('ERROR', 'CRITICAL', 'FATAL') THEN 1 END) as error_count
        FROM logs
-       WHERE user_id = ? AND imported_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+       WHERE user_id = ? AND imported_at >= CURDATE()
        GROUP BY COALESCE(service, 'unknown')
        ORDER BY count DESC
        LIMIT 10`,
@@ -549,7 +549,7 @@ export async function getWatchStats(userId) {
       `SELECT HOUR(COALESCE(timestamp, imported_at)) as hour, COUNT(*) as count
        FROM logs
        WHERE user_id = ?
-         AND COALESCE(timestamp, imported_at) >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+         AND COALESCE(timestamp, imported_at) >= CURDATE()
          AND log_level IN ('ERROR', 'CRITICAL', 'FATAL')
        GROUP BY hour`,
       [userId]
