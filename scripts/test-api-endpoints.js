@@ -51,7 +51,7 @@ async function testDashboardEndpoints() {
     allLevels.forEach(l => result[l] = 0);
     for (const r of perLevel) {
       const level = String(r.log_level || '').toUpperCase();
-      if (result.hasOwnProperty(level)) {
+      if (Object.prototype.hasOwnProperty.call(result, level)) {
         result[level] = r.cnt;
       }
     }

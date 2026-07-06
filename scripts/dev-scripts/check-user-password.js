@@ -38,13 +38,15 @@ async function checkUserPassword() {
     console.log(`  Actif: ${user.is_active}`);
     console.log(`  Hash présent: ${user.password_hash ? 'Oui' : 'NON'}`);
     
+    let hashedPassword = user.password_hash;
+    
     if (!user.password_hash) {
       console.log('⚠️  L\'utilisateur n\'a pas de mot de passe!');
       
       // Créer un mot de passe par défaut
       const defaultPassword = 'Password123!';
       const saltRounds = parseInt(process.env.BCRYPT_ROUNDS || '12');
-      const hashedPassword = await bcrypt.hash(defaultPassword, saltRounds);
+      hashedPassword = await bcrypt.hash(defaultPassword, saltRounds);
       
       await connection.execute(
         'UPDATE users SET password_hash = ? WHERE id = ?', 

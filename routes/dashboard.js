@@ -109,7 +109,7 @@ router.get('/summary', async (req, res) => {
      */
     const todayStr = new Date().toISOString().slice(0, 10);
     const timestampCol = 'COALESCE(timestamp, imported_at)';
-    var [today] = await pool.execute(
+    var [_today] = await pool.execute(
       `SELECT COUNT(*) as cnt FROM logs WHERE ${timestampCol} IS NOT NULL AND ${timestampCol} >= ?` + scope.sql,
       [todayStr + ' 00:00:00', ...scope.params]
     );
@@ -517,7 +517,7 @@ router.get('/per-level', async (req, res) => {
     // Fill in actual counts
     for (const r of rows) {
       const level = String(r.log_level || '').toUpperCase();
-      if (result.hasOwnProperty(level)) {
+      if (Object.prototype.hasOwnProperty.call(result, level)) {
         result[level] = r.cnt;
       }
     }
