@@ -69,7 +69,7 @@ describe('Import integration', () => {
   it('calls evalAllForUser after import', () => {
     const src = readFileSync(path.join(root, 'routes/import.js'), 'utf8');
     expect(src).toContain('await evalAllForUser(userId)');
-    expect(src).toContain('4500000');
+    expect(src).toContain('52428800');
   });
 });
 

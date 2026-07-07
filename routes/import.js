@@ -27,7 +27,7 @@ const RETURN_GAP_DAYS = parseInt(process.env.ERROR_RETURN_GAP_DAYS || "7", 10);
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: Infinity,
+    fileSize: parseInt(process.env.UPLOAD_MAX_SIZE || "52428800", 10),
     files: parseInt(process.env.UPLOAD_MAX_FILES || "10", 10),
   },
   fileFilter: (req, file, cb) => {
@@ -570,6 +570,13 @@ router.post(
       if (!req.file)
         return res.status(400).json({ error: "Aucun fichier fourni" });
 
+      const maxSize = parseInt(process.env.UPLOAD_MAX_SIZE || "52428800", 10);
+      if (req.file.size > maxSize) {
+        return res.status(413).json({
+          error: 'Fichier trop volumineux (50 MB max). Divisez en plusieurs archives.',
+        });
+      }
+
       const jobId = uuidv4();
       const userId = req.session.user.id;
       const source = req.body.source || null;
@@ -781,7 +788,7 @@ export function multerErrorHandler(err, req, res, next) {
   if (err && err.code && err.code.startsWith('LIMIT_')) {
     // MulterError : fichier trop grand, trop de fichiers, champ inconnu...
     const messages = {
-      LIMIT_FILE_SIZE: 'Erreur de téléversement',
+      LIMIT_FILE_SIZE: 'Fichier trop volumineux (50 MB max). Divisez en plusieurs archives.',
       LIMIT_FILE_COUNT: 'Trop de fichiers',
       LIMIT_UNEXPECTED_FILE: 'Champ de fichier inattendu',
     };
