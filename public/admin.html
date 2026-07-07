@@ -35,6 +35,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="users" data-i18n="admin.users">Utilisateurs</button>
       <button class="tab-btn" data-tab="rules" data-i18n="admin.alert_rules">Règles d'alerte</button>
+      <button class="tab-btn" data-tab="recommendations" data-i18n="admin.recommendations">Recommandations</button>
       <button class="tab-btn" data-tab="audit" data-i18n="admin.audit">Journal d'audit</button>
       <button class="tab-btn" data-tab="retention" data-i18n="admin.retention">Rétention</button>
       <button class="tab-btn" data-tab="system" data-i18n="admin.system">Système</button>
@@ -86,6 +87,30 @@
               </tr>
             </thead>
             <tbody id="rules-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECOMMENDATIONS TAB -->
+    <div class="tab-content" id="tab-recommendations">
+      <div class="flex justify-between mb-16">
+        <span class="text-muted" id="recommendations-count"></span>
+        <button class="btn btn-primary btn-sm" id="btn-create-recommendation">Créer une recommandation</button>
+      </div>
+      <div class="card">
+        <div class="table-wrapper">
+          <table class="admin-table-rules">
+            <thead>
+              <tr>
+                <th>Type d'erreur</th>
+                <th>Recommandation</th>
+                <th>Priorité</th>
+                <th>Active</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="recommendations-body"></tbody>
           </table>
         </div>
       </div>
@@ -280,6 +305,46 @@
     </div>
   </div>
 
+  <!-- RECOMMENDATION MODAL -->
+  <div class="modal-overlay" id="recommendation-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="recommendation-modal-title">Créer une recommandation</h3>
+        <button class="modal-close" id="recommendation-modal-close">&times;</button>
+      </div>
+      <form id="recommendation-form">
+        <input type="hidden" id="rec-id">
+        <div class="form-group">
+          <label>Type d'erreur</label>
+          <input type="text" id="rec-error-type" placeholder="ex: ECONNREFUSED, TypeError, etc." required>
+        </div>
+        <div class="form-group">
+          <label>Recommandation</label>
+          <textarea id="rec-recommendation" rows="4" required></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Priorité</label>
+            <select id="rec-priority">
+              <option value="1">Basse</option>
+              <option value="5">Moyenne</option>
+              <option value="10">Haute</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="rec-active" checked> Active
+            </label>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="recommendation-modal-cancel">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- RESET PWD MODAL -->
   <div class="modal-overlay" id="pwd-modal">
     <div class="modal modal-narrow">
@@ -353,6 +418,7 @@
           if (tab === 'audit') loadAudit();
           if (tab === 'retention') loadRetention();
           if (tab === 'system') loadSystem();
+          if (tab === 'recommendations') loadRecommendations();
         });
       });
 
@@ -560,6 +626,78 @@
           document.getElementById('pwd-modal').classList.remove('active');
         });
       });
+      document.querySelectorAll('.modal-overlay').forEach(function(m) {
+        m.addEventListener('click', function(e) { if (e.target === m) m.classList.remove('active'); });
+      });
+
+      // RECOMMENDATIONS
+      function loadRecommendations() {
+        api.get('/api/recommendations').then(function(recs) {
+          var tb = document.getElementById('recommendations-body');
+          document.getElementById('recommendations-count').textContent = recs.length + ' recommandation(s)';
+          tb.innerHTML = recs.map(function(r) {
+            var activeBadge = r.is_active ? '<span class="badge badge-status-resolved">Oui</span>' : '<span class="badge badge-status-open">Non</span>';
+            var priorityLabels = { 1: 'Basse', 5: 'Moyenne', 10: 'Haute' };
+            return '<tr><td>'+esc(r.error_type)+'</td><td class="cell-ellipsis" title="'+esc(r.recommendation)+'">'+esc(r.recommendation.slice(0,80))+(r.recommendation.length>80?'\u2026':'')+'</td><td><span class="badge badge-info">'+esc(priorityLabels[r.priority]||r.priority)+'</span></td><td>'+activeBadge+'</td><td><button class="btn btn-xs btn-secondary act-edit-rec" data-rec="'+encodeURIComponent(JSON.stringify(r))+'">Edit</button> <button class="btn btn-xs btn-danger act-delete-rec" data-id="'+r.id+'">Supprimer</button></td></tr>';
+          }).join('');
+        });
+      }
+
+      document.getElementById('btn-create-recommendation').addEventListener('click', function() {
+        document.getElementById('rec-id').value = '';
+        document.getElementById('rec-error-type').value = '';
+        document.getElementById('rec-recommendation').value = '';
+        document.getElementById('rec-priority').value = '5';
+        document.getElementById('rec-active').checked = true;
+        document.getElementById('recommendation-modal-title').textContent = 'Créer une recommandation';
+        document.getElementById('recommendation-modal').classList.add('active');
+      });
+
+      document.getElementById('recommendations-body').addEventListener('click', function(e) {
+        var btn = e.target.closest('button');
+        if (!btn) return;
+        if (btn.classList.contains('act-edit-rec')) {
+          var r = JSON.parse(decodeURIComponent(btn.dataset.rec));
+          document.getElementById('rec-id').value = r.id;
+          document.getElementById('rec-error-type').value = r.error_type;
+          document.getElementById('rec-recommendation').value = r.recommendation;
+          document.getElementById('rec-priority').value = r.priority;
+          document.getElementById('rec-active').checked = !!r.is_active;
+          document.getElementById('recommendation-modal-title').textContent = 'Modifier la recommandation';
+          document.getElementById('recommendation-modal').classList.add('active');
+        }
+        if (btn.classList.contains('act-delete-rec')) {
+          if (!confirm('Confirmer la suppression ?')) return;
+          api.del('/api/recommendations/' + btn.dataset.id).then(function() {
+            window.toast.success('Recommandation supprimée');
+            loadRecommendations();
+          });
+        }
+      });
+
+      document.getElementById('recommendation-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var id = document.getElementById('rec-id').value;
+        var payload = {
+          error_type: document.getElementById('rec-error-type').value,
+          recommendation: document.getElementById('rec-recommendation').value,
+          priority: parseInt(document.getElementById('rec-priority').value, 10),
+          is_active: document.getElementById('rec-active').checked
+        };
+        var promise = id ? api.put('/api/recommendations/' + id, payload) : api.post('/api/recommendations', payload);
+        promise.then(function() {
+          window.toast.success(id ? 'Recommandation modifiée' : 'Recommandation créée');
+          document.getElementById('recommendation-modal').classList.remove('active');
+          loadRecommendations();
+        });
+      });
+
+      ['recommendation-modal-close','recommendation-modal-cancel'].forEach(function(id) {
+        document.getElementById(id).addEventListener('click', function() {
+          document.getElementById('recommendation-modal').classList.remove('active');
+        });
+      });
+
       document.querySelectorAll('.modal-overlay').forEach(function(m) {
         m.addEventListener('click', function(e) { if (e.target === m) m.classList.remove('active'); });
       });
