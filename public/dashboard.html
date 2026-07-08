@@ -528,8 +528,8 @@
       api.get('/api/dashboard/per-level').then(function(d){  // [FIX] Appeler /per-level au lieu de /summary
         if (!d) return;
         var ctx = document.getElementById('level-chart'); if (!ctx) return;
-        var levels = ['INFO','WARNING','ERROR','CRITICAL','FATAL','DEBUG'];
-        var colors = ['#4f8ef7','#f59e0b','#ef4444','#8b5cf6','#fc5c65','#6b7280'];
+        var levels = ['TRACE','INFO','WARNING','ERROR','CRITICAL','FATAL','DEBUG'];
+        var colors = ['#9ca3af','#4f8ef7','#f59e0b','#ef4444','#8b5cf6','#fc5c65','#6b7280'];
         
         // [FIX] Lire depuis /per-level qui retourne { INFO: N, WARNING: N, ... }
         var data = levels.map(function(l) { return Number(d[l] || d[l.toLowerCase()] || 0); });

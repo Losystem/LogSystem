@@ -511,7 +511,7 @@ router.get('/per-level', async (req, res) => {
       scope.params
     );
     const result = {};
-    const allLevels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'FATAL'];
+    const allLevels = ['TRACE', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'FATAL'];
     // Initialize all levels to 0
     allLevels.forEach(l => result[l] = 0);
     // Fill in actual counts
