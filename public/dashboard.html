@@ -631,7 +631,7 @@
           return '<tr class="log-row-link" data-log-id="'+r.id+'">'
             + '<td class="cell-muted cell-nowrap">'+timeAgo(r.timestamp)+'</td>'
             + '<td>'+lvlBadge(r.log_level)+'</td>'
-            + '<td class="cell-muted cell-ellipsis-sm" title="'+esc(r.log_source||r.source)+'">'+esc(r.log_source||r.source||'Non spécifiée')+'</td>'
+            + '<td class="cell-muted cell-ellipsis-sm" title="'+esc(r.source_system||r.log_source||r.source)+'">'+esc(r.source_system||r.log_source||r.source||'Non spécifiée')+'</td>'
             + '<td class="col-hide-mobile cell-muted">'+esc(r.log_user||r.target_user||'—')+'</td>'
             + '<td class="col-hide-mobile cell-muted">'+esc(r.imported_at ? timeAgo(r.imported_at) : '—')+'</td>'
             + '<td class="cell-ellipsis-lg" title="'+esc(r.message)+'">'+esc(r.message||'—')+'</td>'

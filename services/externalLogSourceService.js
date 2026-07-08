@@ -259,6 +259,7 @@ async function ingestLogs(logs, source) {
     const { generateFingerprint } = await import('../lib/processing/fingerprint.js');
     const { enrichLogMetadata } = await import('../lib/processing/logMetadata.js');
     const { alertEngineBus } = await import('./alertEngine.js');
+    const { alertWorker } = await import('./alertWorker.js');
 
     const batchId = crypto.randomUUID();
     let successCount = 0;
@@ -351,6 +352,23 @@ async function ingestLogs(logs, source) {
     }
 
     await conn.commit();
+
+    // Emit SSE for Watch Log
+    const enrichedLogs = [];
+    for (const logEntry of logs) {
+      enrichedLogs.push({
+        timestamp: logEntry.timestamp || new Date().toISOString(),
+        log_level: normalizeLevel(logEntry.level || 'INFO'),
+        message: logEntry.message || '',
+        service: logEntry.service || source.service_name || source.name,
+        source: source.name,
+        source_server: logEntry.source_server || source.name,
+        user_id: source.user_id,
+        source_type: 'external',
+        imported_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+      });
+    }
+    alertWorker.broadcastLogBatch(enrichedLogs, { userId: source.user_id });
 
     logger.info({ 
       event: 'external_logs_ingested', 

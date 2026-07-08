@@ -304,6 +304,12 @@ async function processImport(
             logEntry.source ||
             importSource ||
             null,
+          source_system:
+            logEntry.source_system ||
+            logEntry.source ||
+            logEntry.source_server ||
+            importSource ||
+            null,
           service: logEntry.service || importService || null,
           message: logEntry.message || "",
           client_ip: logEntry.ip_address || logEntry.client_ip || null, // FIX: ip_address → client_ip
@@ -434,6 +440,7 @@ async function insertBatch(conn, batch, userId) {
       entry.log_level,
       entry.source,
       entry.source_server,
+      entry.source_system,
       entry.service,
       entry.message,
       entry.normalized_message,
@@ -462,7 +469,7 @@ async function insertBatch(conn, batch, userId) {
 
     await conn.query(
       `INSERT IGNORE INTO logs (
-        raw_log, timestamp, created_time, timezone, log_level, source, source_server, service, message, normalized_message,
+        raw_log, timestamp, created_time, timezone, log_level, source, source_server, source_system, service, message, normalized_message,
         event_type, fingerprint, user_id, source_type, ingested_realtime, client_ip, module, error_type,
         stack_trace, target_user, parser_format, timestamp_inferred, classification_confidence,
         file_created_at, file_modified_at, file_name, import_job_id, imported_by_user_id, imported_at, log_source, log_user
