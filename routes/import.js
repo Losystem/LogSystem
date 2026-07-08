@@ -779,6 +779,29 @@ router.get("/jobs/:id/summary", async (req, res) => {
   }
 });
 
+// GET /imported-today - Get logs imported today for watchlog
+router.get('/imported-today', async (req, res) => {
+  try {
+    const scope = userScope(req);
+    const today = new Date().toISOString().slice(0, 10);
+    
+    const [rows] = await pool.execute(
+      `SELECT id, timestamp, log_level, message, source_server, source, service, imported_at, 
+              import_job_id, imported_by_user_id
+       FROM logs
+       WHERE imported_at >= ? AND imported_at < ?${scope.sql}
+       ORDER BY imported_at DESC
+       LIMIT 100`,
+      [today + ' 00:00:00', today + ' 23:59:59', ...scope.params]
+    );
+    
+    res.json({ imported_logs: rows });
+  } catch (e) {
+    logger.error({ event: 'imported_today_error', error: e.message }, '[IMPORT]');
+    if (!res.headersSent) res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 export default router;
 
 // [FIX-12] Gestionnaire d'erreur Multer — doit être APRÈS export default et les routes

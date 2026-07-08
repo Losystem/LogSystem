@@ -243,7 +243,7 @@ router.get('/trends', async (req, res) => {
       const seriesData = {};
       levels.forEach(l => { seriesData[l] = new Array(24).fill(0); });
       const scope = userScope(req);
-      const timestampCol = 'imported_at';
+      const timestampCol = 'COALESCE(timestamp, imported_at)';
       const startSql = startDate.toISOString().slice(0, 19).replace('T', ' ');
       const endSql = endDate.toISOString().slice(0, 19).replace('T', ' ');
       const [rows] = await pool.execute(
@@ -282,9 +282,9 @@ router.get('/trends', async (req, res) => {
     levels.forEach(l => { seriesData[l] = new Array(dates.length).fill(0); });
 
     // Requête optimisée avec dates de début/fin explicites
-    // Use imported_at to show import trends
+    // Use COALESCE(timestamp, imported_at) to show actual log trends
     const scope = userScope(req);
-    const timestampCol = 'imported_at';
+    const timestampCol = 'COALESCE(timestamp, imported_at)';
     const [rows] = await pool.execute(
       `SELECT DATE_FORMAT(${timestampCol}, '%Y-%m-%d') AS day,
               log_level,
@@ -461,7 +461,10 @@ router.get('/recent-logs', async (req, res) => {
     const scope = userScope(req);
     const limit = asInt(req.query.limit, 10);
     const [rows] = await pool.query(
-      'SELECT * FROM logs WHERE 1=1' + scope.sql + ' ORDER BY id DESC LIMIT ?',
+      `SELECT id, raw_log, timestamp, log_level, message, source, source_server, source_system,
+              service, log_user, target_user, imported_at, file_name, import_job_id
+       FROM logs WHERE 1=1${scope.sql}
+       ORDER BY COALESCE(timestamp, imported_at) DESC LIMIT ?`,
       [...scope.params, limit]
     );
     // Normaliser les champs pour le frontend Next.js (camelCase)
