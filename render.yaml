@@ -44,8 +44,6 @@ services:
       # Application
       - key: PORT
         value: "10000"
-      - key: UPLOAD_MAX_SIZE
-        value: "52428800"
       - key: IMPORT_BATCH_SIZE
         value: "500"
       - key: ALERT_EVAL_INTERVAL

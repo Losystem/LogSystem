@@ -27,7 +27,6 @@ const RETURN_GAP_DAYS = parseInt(process.env.ERROR_RETURN_GAP_DAYS || "7", 10);
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: parseInt(process.env.UPLOAD_MAX_SIZE || "52428800", 10),
     files: parseInt(process.env.UPLOAD_MAX_FILES || "10", 10),
   },
   fileFilter: (req, file, cb) => {
@@ -576,13 +575,6 @@ router.post(
     try {
       if (!req.file)
         return res.status(400).json({ error: "Aucun fichier fourni" });
-
-      const maxSize = parseInt(process.env.UPLOAD_MAX_SIZE || "52428800", 10);
-      if (req.file.size > maxSize) {
-        return res.status(413).json({
-          error: 'Fichier trop volumineux (50 MB max). Divisez en plusieurs archives.',
-        });
-      }
 
       const jobId = uuidv4();
       const userId = req.session.user.id;
