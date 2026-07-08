@@ -406,7 +406,7 @@
       'search.level_all': 'All',
       'import.title': 'Log Import',
       'import.drop': 'Drag a file here or click to select',
-      'import.formats': 'Accepted formats: .log, .txt, .json, .jsonl (max 50 MB)',
+      'import.formats': 'Accepted formats: .log, .txt, .json, .jsonl',
       'import.source': 'Source (optional)',
       'import.source.placeholder': 'ex: production',
       'import.service': 'Service (optional)',
