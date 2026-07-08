@@ -243,7 +243,7 @@ router.get('/trends', async (req, res) => {
       const seriesData = {};
       levels.forEach(l => { seriesData[l] = new Array(24).fill(0); });
       const scope = userScope(req);
-      const timestampCol = 'COALESCE(timestamp, imported_at)';
+      const timestampCol = 'imported_at';
       const startSql = startDate.toISOString().slice(0, 19).replace('T', ' ');
       const endSql = endDate.toISOString().slice(0, 19).replace('T', ' ');
       const [rows] = await pool.execute(
@@ -282,9 +282,9 @@ router.get('/trends', async (req, res) => {
     levels.forEach(l => { seriesData[l] = new Array(dates.length).fill(0); });
 
     // Requête optimisée avec dates de début/fin explicites
-    // Use COALESCE(timestamp, imported_at) to show actual log trends
+    // Use imported_at to show import trends
     const scope = userScope(req);
-    const timestampCol = 'COALESCE(timestamp, imported_at)';
+    const timestampCol = 'imported_at';
     const [rows] = await pool.execute(
       `SELECT DATE_FORMAT(${timestampCol}, '%Y-%m-%d') AS day,
               log_level,

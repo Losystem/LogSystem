@@ -11,7 +11,7 @@ import {
 import { normalizeMessage } from "../lib/processing/normalize.js";
 import { classifyLog } from "../lib/processing/classify.js";
 import { generateFingerprint } from "../lib/processing/fingerprint.js";
-import { normalizeLevel } from "../config/database.js";
+import { normalizeLevel } from "../services/logLevelUtils.js";
 import { alertEngineBus, evalAllForUser } from "../services/alertEngine.js";
 import { alertWorker } from "../workers/alertWorker.js";
 import { recordAudit } from "../middleware/audit.js";
