@@ -162,7 +162,7 @@
       'search.level_all': 'Tous',
       'import.title': 'Import de logs',
       'import.drop': 'Glissez un fichier ici ou cliquez pour sélectionner',
-      'import.formats': 'Formats acceptés : .log, .txt, .json, .jsonl (max 50 Mo)',
+      'import.formats': 'Formats acceptés : .log, .txt, .json, .jsonl',
       'import.source': 'Source (optionnel)',
       'import.source.placeholder': 'ex: production',
       'import.service': 'Service (optionnel)',
