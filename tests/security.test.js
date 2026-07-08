@@ -179,8 +179,8 @@ describe('[FUNC-08] Multer : gestionnaire d\'erreurs', () => {
     expect(serverJs).toContain('app.use(multerErrorHandler)');
   });
 
-  it('multerErrorHandler doit retourner 400 pour LIMIT_FILE_SIZE', () => {
-    const mockErr = { code: 'LIMIT_FILE_SIZE' };
+  it('multerErrorHandler doit retourner 400 pour LIMIT_FILE_COUNT', () => {
+    const mockErr = { code: 'LIMIT_FILE_COUNT' };
     const mockRes = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn()
@@ -190,7 +190,6 @@ describe('[FUNC-08] Multer : gestionnaire d\'erreurs', () => {
     // Simulate handler logic
     if (mockErr && mockErr.code && mockErr.code.startsWith('LIMIT_')) {
       const messages = {
-        LIMIT_FILE_SIZE: 'Fichier trop volumineux',
         LIMIT_FILE_COUNT: 'Trop de fichiers',
         LIMIT_UNEXPECTED_FILE: 'Champ de fichier inattendu',
       };
@@ -200,7 +199,7 @@ describe('[FUNC-08] Multer : gestionnaire d\'erreurs', () => {
     }
 
     expect(mockRes.status).toHaveBeenCalledWith(400);
-    expect(mockRes.json).toHaveBeenCalledWith({ error: 'Fichier trop volumineux' });
+    expect(mockRes.json).toHaveBeenCalledWith({ error: 'Trop de fichiers' });
     expect(mockNext).not.toHaveBeenCalled();
   });
 

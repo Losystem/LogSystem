@@ -785,18 +785,16 @@ export default router;
 // pour être capturé par Express comme middleware d'erreur (4 paramètres)
 export function multerErrorHandler(err, req, res, next) {
   if (err && err.code && err.code.startsWith('LIMIT_')) {
-    // MulterError : fichier trop grand, trop de fichiers, champ inconnu...
+    // MulterError : trop de fichiers, champ inconnu...
     const messages = {
-      LIMIT_FILE_SIZE: 'Fichier trop volumineux (50 MB max). Divisez en plusieurs archives.',
       LIMIT_FILE_COUNT: 'Trop de fichiers',
       LIMIT_UNEXPECTED_FILE: 'Champ de fichier inattendu',
     };
     const message = messages[err.code] || 'Erreur de téléversement';
     logger.warn({ event: 'multer_error', code: err.code, field: err.field }, `[IMPORT] ${message}`);
-    const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
     // Check if headers have already been sent to avoid "Cannot set headers after they are sent" error
     if (!res.headersSent) {
-      return res.status(status).json({ error: message });
+      return res.status(400).json({ error: message });
     }
   }
   next(err);
