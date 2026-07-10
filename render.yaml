@@ -42,6 +42,8 @@ services:
       - key: BCRYPT_ROUNDS
         value: "10"
       # Application
+      - key: PORT
+        value: "10000"
       - key: IMPORT_BATCH_SIZE
         value: "500"
       - key: ALERT_EVAL_INTERVAL

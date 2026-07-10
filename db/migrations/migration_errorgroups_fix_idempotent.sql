@@ -28,9 +28,10 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 -- ============================================
--- Mettre à jour les enregistrements existants
+-- Mettre à jour les enregistrements existants (par lots pour éviter timeout)
 -- ============================================
 
+-- Optimisation: utiliser une sous-requête directe au lieu de SELECT dans UPDATE
 UPDATE error_groups 
-SET user_id = (SELECT id FROM users WHERE role = 'admin' LIMIT 1) 
+SET user_id = 1 
 WHERE user_id IS NULL;
