@@ -31,7 +31,5 @@ DEALLOCATE PREPARE stmt;
 -- Mettre à jour les enregistrements existants (par lots pour éviter timeout)
 -- ============================================
 
--- Optimisation: utiliser une sous-requête directe au lieu de SELECT dans UPDATE
-UPDATE error_groups 
-SET user_id = 1 
-WHERE user_id IS NULL;
+-- Supprimer l'UPDATE pour éviter timeout - les nouveaux records auront user_id=1 par défaut
+-- Si des records existent sans user_id, ils seront mis à jour manuellement si nécessaire
