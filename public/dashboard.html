@@ -526,12 +526,17 @@
     // ── Répartition par niveau ──
     function loadLevelChart() {
       api.get('/api/dashboard/per-level').then(function(d){  // [FIX] Appeler /per-level au lieu de /summary
-        console.log('[DEBUG] Level chart data:', d);  // DEBUG logging
         if (!d) {
           console.warn('[WARN] Per-level API returned null');
           return;
         }
-        var ctx = document.getElementById('level-chart'); if (!ctx) return;
+        var parent = document.querySelector('.chart-box-sm');
+        var ctx = document.getElementById('level-chart');
+        if (!ctx && parent) {
+          parent.innerHTML = '<canvas id="level-chart" role="img" aria-label="RÃ©partition des niveaux">Aucune donnÃ©e.</canvas>';
+          ctx = document.getElementById('level-chart');
+        }
+        if (!ctx) return;
         var levels = ['TRACE','INFO','WARNING','ERROR','CRITICAL','FATAL','DEBUG'];
         var colors = ['#9ca3af','#4f8ef7','#f59e0b','#ef4444','#8b5cf6','#fc5c65','#6b7280'];
         
@@ -541,11 +546,22 @@
         
         // [FIX] Si aucune donnée, afficher message au lieu de graphique vide
         if (total === 0) {
-          var parent = ctx.parentElement;
-          parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text2);font-size:13px;">' + t('dashboard.no_data') + '</div>';
+          if (levelChart) { levelChart.destroy(); levelChart = null; }
+          ctx.style.display = 'none';
+          var empty = ctx.parentElement.querySelector('.level-empty');
+          if (!empty) {
+            empty = document.createElement('div');
+            empty.className = 'level-empty';
+            empty.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;color:var(--text2);font-size:13px;';
+            ctx.parentElement.appendChild(empty);
+          }
+          empty.textContent = t('dashboard.no_data');
           return;
         }
         
+        ctx.style.display = '';
+        var oldEmpty = ctx.parentElement.querySelector('.level-empty');
+        if (oldEmpty) oldEmpty.remove();
         if (levelChart) { levelChart.destroy(); levelChart = null; }
         levelChart = new Chart(ctx, {
           type: 'doughnut',
@@ -885,7 +901,11 @@ function showLogDetail(logId){
           if (redisEl) redisEl.textContent = sys.redis === 'ok' ? '✅ Actif' : (sys.redis === 'unavailable' ? '— Indisponible' : '❌ Erreur');
           if (redisDot) redisDot.className = 'status-dot ' + (sys.redis === 'ok' ? 'ok' : 'warn');
           var wEl = document.getElementById('status-watcher');
-          if (wEl && sys.watcher) wEl.textContent = sys.watcher.running !== false ? '✅ Actif' : '⏸ Arrêté';
+          if (wEl && sys.watcher) {
+            wEl.textContent = sys.watcher.mode === 'polling-db'
+              ? 'Polling DB (Render)'
+              : (sys.watcher.running !== false ? '✅ Actif' : '⏸ Arrêté');
+          }
         })
         .catch(function(){});
     }

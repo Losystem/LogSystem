@@ -5,6 +5,41 @@ import logger from '../config/logger.js';
 
 const router = Router();
 
+// GET /recommendations/match/:errorType - Get recommendation for specific error type
+// This route must stay before /:id, otherwise "match" is parsed as an id.
+router.get('/match/:errorType', requireAuth, async (req, res) => {
+  try {
+    const { errorType } = req.params;
+    const { event_type, log_level } = req.query;
+    
+    let sql = `SELECT recommendation FROM error_recommendations WHERE is_active = 1 AND error_type = ?`;
+    const params = [errorType];
+    
+    if (event_type) {
+      sql += ' AND (event_type IS NULL OR event_type = ?)';
+      params.push(event_type);
+    }
+    
+    if (log_level) {
+      sql += ' AND (log_level IS NULL OR log_level = ?)';
+      params.push(log_level);
+    }
+    
+    sql += ' ORDER BY priority DESC LIMIT 1';
+    
+    const [rows] = await pool.execute(sql, params);
+    
+    if (rows.length > 0) {
+      res.json({ recommendation: rows[0].recommendation });
+    } else {
+      res.json({ recommendation: null });
+    }
+  } catch (e) {
+    logger.error({ event: 'match_recommendation_error', error: e.message }, '[RECOMMENDATIONS]');
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 // GET /recommendations - Get all recommendations (admin only)
 router.get('/', requireAuth, async (req, res) => {
   try {
@@ -137,40 +172,6 @@ router.delete('/:id', requireAuth, async (req, res) => {
     res.json({ message: 'Recommandation supprimée' });
   } catch (e) {
     logger.error({ event: 'delete_recommendation_error', error: e.message }, '[RECOMMENDATIONS]');
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
-
-// GET /recommendations/match/:errorType - Get recommendation for specific error type
-router.get('/match/:errorType', requireAuth, async (req, res) => {
-  try {
-    const { errorType } = req.params;
-    const { event_type, log_level } = req.query;
-    
-    let sql = `SELECT recommendation FROM error_recommendations WHERE is_active = 1 AND error_type = ?`;
-    const params = [errorType];
-    
-    if (event_type) {
-      sql += ' AND (event_type IS NULL OR event_type = ?)';
-      params.push(event_type);
-    }
-    
-    if (log_level) {
-      sql += ' AND (log_level IS NULL OR log_level = ?)';
-      params.push(log_level);
-    }
-    
-    sql += ' ORDER BY priority DESC LIMIT 1';
-    
-    const [rows] = await pool.execute(sql, params);
-    
-    if (rows.length > 0) {
-      res.json({ recommendation: rows[0].recommendation });
-    } else {
-      res.json({ recommendation: null });
-    }
-  } catch (e) {
-    logger.error({ event: 'match_recommendation_error', error: e.message }, '[RECOMMENDATIONS]');
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });

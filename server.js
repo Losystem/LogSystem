@@ -56,10 +56,13 @@ process.on('unhandledRejection', (reason) => {
 // ── Express app ────────────────────────────────────────────────────────────────
 const app = express();
 app.set('trust proxy', 1);
-const PORT = parseInt(process.env.PORT || '3001', 10);
+const PORT = parseInt(process.env.PORT || '3002', 10);
+
 
 // ── HTTPS redirect ────────────────────────────────────────────────────────────
-if (IS_PROD) {
+// En local (dev), on évite le redirect HTTPS pour pouvoir tester sans erreur TLS.
+const shouldForceHttps = IS_PROD && process.env.FORCE_HTTPS !== 'false';
+if (shouldForceHttps) {
   app.use((req, res, next) => {
     if (req.headers['x-forwarded-proto'] !== 'https') {
       return res.redirect(301, `https://${req.headers.host}${req.url}`);
@@ -67,6 +70,7 @@ if (IS_PROD) {
     next();
   });
 }
+
 
 // ── Session secret ────────────────────────────────────────────────────────────
 const sessionSecret = process.env.SESSION_SECRET;

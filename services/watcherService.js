@@ -413,17 +413,22 @@ export function stopWatcher() {
 
 export function getWatcherStatus() {
   const dirs = getDirs();
+  const isRenderEnv = !!(process.env.RENDER || process.env.RENDER_SERVICE_NAME);
   const mappedDirs = Object.keys(dirOwners || {});
   const resolvedDirs = dirs.map(d => path.resolve(d));
   const unmappedCount = resolvedDirs.filter(d => !mappedDirs.includes(d)).length;
 
   return {
     running: watcher !== null,
+    mode: isRenderEnv ? 'polling-db' : 'file-watch',
     watched_files: fileOffsets.size,
     dirs,
     unmapped_dirs: unmappedCount,
     inflight: inflightProcesses.size,
-    platform: 'standard'
+    platform: isRenderEnv ? 'render' : 'standard',
+    message: isRenderEnv
+      ? 'File watcher disabled on Render; WatchLog uses database polling.'
+      : 'File watcher active when configured.'
   };
 }
 

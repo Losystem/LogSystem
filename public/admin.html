@@ -632,13 +632,15 @@
 
       // RECOMMENDATIONS
       function loadRecommendations() {
-        api.get('/api/recommendations').then(function(recs) {
+        api.get('/api/recommendations').then(function(payload) {
+          var recs = Array.isArray(payload) ? payload : ((payload && payload.recommendations) || []);
           var tb = document.getElementById('recommendations-body');
           document.getElementById('recommendations-count').textContent = recs.length + ' recommandation(s)';
           tb.innerHTML = recs.map(function(r) {
             var activeBadge = r.is_active ? '<span class="badge badge-status-resolved">Oui</span>' : '<span class="badge badge-status-open">Non</span>';
             var priorityLabels = { 1: 'Basse', 5: 'Moyenne', 10: 'Haute' };
-            return '<tr><td>'+esc(r.error_type)+'</td><td class="cell-ellipsis" title="'+esc(r.recommendation)+'">'+esc(r.recommendation.slice(0,80))+(r.recommendation.length>80?'\u2026':'')+'</td><td><span class="badge badge-info">'+esc(priorityLabels[r.priority]||r.priority)+'</span></td><td>'+activeBadge+'</td><td><button class="btn btn-xs btn-secondary act-edit-rec" data-rec="'+encodeURIComponent(JSON.stringify(r))+'">Edit</button> <button class="btn btn-xs btn-danger act-delete-rec" data-id="'+r.id+'">Supprimer</button></td></tr>';
+            var text = String(r.recommendation || '');
+            return '<tr><td>'+esc(r.error_type || '')+'</td><td class="cell-ellipsis" title="'+esc(text)+'">'+esc(text.slice(0,80))+(text.length>80?'\u2026':'')+'</td><td><span class="badge badge-info">'+esc(priorityLabels[r.priority]||r.priority)+'</span></td><td>'+activeBadge+'</td><td><button class="btn btn-xs btn-secondary act-edit-rec" data-rec="'+encodeURIComponent(JSON.stringify(r))+'">Edit</button> <button class="btn btn-xs btn-danger act-delete-rec" data-id="'+r.id+'">Supprimer</button></td></tr>';
           }).join('');
         });
       }
