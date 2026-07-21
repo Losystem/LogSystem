@@ -13,6 +13,7 @@ import crypto from 'crypto';
 import { alertEngineBus } from './alertEngine.js'; // FIX #5: Import du bus event-driven
 import { alertWorker } from '../workers/alertWorker.js';
 import { enrichLogMetadata } from '../lib/processing/logMetadata.js';
+import { OPERATIONAL_TS } from '../lib/operationalTime.js';
 
 let watcher = null;
 const fileOffsets = new Map(); // FIX #4: Suivi des offsets par fichier
@@ -551,10 +552,10 @@ export async function getWatchStats(userId) {
     );
 
     const [hourlyErrors] = await conn.query(
-      `SELECT HOUR(COALESCE(timestamp, imported_at)) as hour, COUNT(*) as count
+      `SELECT HOUR(${OPERATIONAL_TS}) as hour, COUNT(*) as count
        FROM logs
        WHERE user_id = ?
-         AND COALESCE(timestamp, imported_at) >= CURDATE()
+         AND ${OPERATIONAL_TS} >= CURDATE()
          AND log_level IN ('ERROR', 'CRITICAL', 'FATAL')
        GROUP BY hour`,
       [userId]

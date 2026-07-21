@@ -36,6 +36,7 @@ import searchApiRoutes from './routes/api/search.js';
 import recommendationsRoutes from './routes/recommendations.js';
 import { alertWorker } from './workers/alertWorker.js';
 import { startAlertEngine, setAlertWorker, stopAlertEngine } from './services/alertEngine.js';
+import { ensureDefaultRecommendations } from './services/recommendationsSeed.js';
 import { startRetentionScheduler } from './services/retentionService.js';
 import { startWatcher, stopWatcher, getWatcherStatus } from './services/watcherService.js';
 import { startCacheService } from './services/cacheService.js';
@@ -238,6 +239,7 @@ async function start() {
   setAlertWorker(alertWorker);
 
   await startAlertEngine().catch(e => logger.error({ event: 'alertEngineStartFailed', message: e.message }));
+  await ensureDefaultRecommendations().catch(e => logger.error({ event: 'recommendationsSeedFailed', message: e.message }));
   startRetentionScheduler();
   // Skip file watcher on Render (ephemeral filesystem)
   if (!process.env.RENDER && !process.env.RENDER_SERVICE_NAME) {

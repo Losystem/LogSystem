@@ -329,7 +329,28 @@
 
     function fetchStats() {
       api.get('/api/logs/watch/stats').then(function(d) {
-        if (d && d.stats) updateMetricsFromStats(d.stats);
+        if (d && d.stats) {
+          updateMetricsFromStats(d.stats);
+          if (d.stats.level_counts) {
+            Object.keys(STATE.metrics.levelCount).forEach(function(k) { STATE.metrics.levelCount[k] = 0; });
+            Object.assign(STATE.metrics.levelCount, d.stats.level_counts);
+          }
+          if (Array.isArray(d.stats.hourly_errors)) {
+            STATE.metrics.hourlyErrors = d.stats.hourly_errors.slice();
+          }
+          if (d.stats.total_logs != null) {
+            STATE.metrics.total = Number(d.stats.total_logs);
+          }
+          if (d.stats.error_count != null) {
+            STATE.metrics.errors = Number(d.stats.error_count);
+          }
+          if (Array.isArray(d.top_services)) {
+            STATE.metrics.services = new Map(d.top_services.map(function(row) {
+              return [row.service || 'unknown', Number(row.count || 0)];
+            }));
+          }
+          updateUI();
+        }
       }).catch(function() {});
       
       // Récupérer les alertes récentes
@@ -441,12 +462,19 @@
       };
     }
 
+    function operationalTime(log) {
+      return log.imported_at || log.timestamp || log.created_at || new Date().toISOString();
+    }
+
     function normalizeIncomingLog(log) {
       const level = (log.log_level || log.level || 'INFO').toString().toUpperCase();
+      const opTime = operationalTime(log);
       return {
         ...log,
         id: log.id,
-        timestamp: log.timestamp || log.created_at || new Date().toISOString(),
+        operationalTime: opTime,
+        timestamp: log.timestamp || opTime,
+        source_type: log.source_type || (log.import_job_id ? 'import' : 'watch'),
         log_level: LEVEL_SEVERITY[level] ? level : 'INFO',
         source: log.source || '',
         service: log.service || 'unknown',
@@ -458,7 +486,7 @@
       const cutoff = Date.now() - TWENTY_FOUR_HOURS_MS;
       const beforeCount = STATE.buffer.length;
       STATE.buffer = STATE.buffer.filter(function(log) {
-        const ts = new Date(log.timestamp || Date.now()).getTime();
+        const ts = new Date(log.operationalTime || operationalTime(log)).getTime();
         return !Number.isNaN(ts) && ts >= cutoff;
       });
 
@@ -480,7 +508,7 @@
       }
 
       STATE.metrics.levelCount[log.log_level] = (STATE.metrics.levelCount[log.log_level] || 0) + 1;
-      const hour = new Date(log.timestamp || Date.now()).getHours();
+      const hour = new Date(log.operationalTime || operationalTime(log)).getHours();
       if (['ERROR', 'CRITICAL', 'FATAL'].includes(log.log_level)) {
         STATE.metrics.hourlyErrors[hour]++;
       }
@@ -518,6 +546,8 @@
     function replaceBufferWithLogs(logs) {
       STATE.buffer = (logs || []).slice(0, STATE.maxBuffer).map(normalizeIncomingLog);
       STATE.seenLogIds = new Set(STATE.buffer.filter(l => l.id).map(l => String(l.id)));
+      resetMetrics();
+      STATE.buffer.forEach(trackLogMetrics);
       pruneBufferTo24Hours();
       updateUI();
     }
@@ -566,7 +596,7 @@
             div.setAttribute('data-log-id', log.id);
           }
 
-          const time = new Date(log.timestamp || Date.now()).toLocaleTimeString('fr-FR');
+          const time = new Date(log.operationalTime || log.timestamp || Date.now()).toLocaleTimeString('fr-FR');
           const svc = log.service ? `<div class="log-service" style="font-size:10px;color:var(--text2);margin-right:6px">${esc(log.service)}</div>` : '';
           const st = log.source_type || 'watch';
           const conf = SOURCE_CONFIG[st] || SOURCE_CONFIG.watch;

@@ -2,6 +2,7 @@ import logger from '../config/logger.js';
 import pool, { levelSeverity, normalizeLevel } from '../config/database.js';
 import EventEmitter from 'events';
 import { detectVolumeAnomalies } from './anomaliesService.js';
+import { OPERATIONAL_TS, OPERATIONAL_TS_EXPR, isCloudDeployment } from '../lib/operationalTime.js';
 
 const ALERT_EVAL_INTERVAL = parseInt(process.env.ALERT_EVAL_INTERVAL || '60000', 10);
 const SAFETY_INTERVAL = parseInt(process.env.SAFETY_INTERVAL || ALERT_EVAL_INTERVAL.toString(), 10); // Fix #3: Use ALERT_EVAL_INTERVAL (60s) instead of 10s to prevent DB saturation
@@ -84,7 +85,7 @@ async function evalRule(rule, targetUserId = rule.created_by || null) {
   const windowStart = new Date(now.getTime() - rule.time_window_minutes * 60000);
   const conditionType = rule.condition_type;
   const conditionValue = rule.condition_value;
-  const tsCol = 'COALESCE(timestamp, imported_at)';
+  const tsCol = OPERATIONAL_TS;
   
   const userFilter = targetUserId ? 'AND user_id = ?' : 'AND 1=0';
   const scopedParams = targetUserId ? [targetUserId] : [];
@@ -233,9 +234,9 @@ async function createAlert(rule, message, targetUserId = null) {
     const params = userId ? [windowStart, userId] : [windowStart];
     
     // Get count and sample logs
-    const tsCol = 'COALESCE(timestamp, imported_at)';
+    const tsCol = OPERATIONAL_TS;
     const [samples] = await pool.execute(
-      `SELECT id, timestamp, message, module, target_user FROM logs 
+      `SELECT id, timestamp, imported_at, message, module, target_user FROM logs 
        WHERE ${tsCol} >= ? ${userFilter} 
        ORDER BY ${tsCol} DESC LIMIT 3`,
       params
@@ -375,7 +376,7 @@ async function evalSmartAlertsForUser(userId) {
     `SELECT COALESCE(error_type, event_type, 'unknown') as type_label, COUNT(*) as current_count
      FROM logs
      WHERE user_id = ? 
-       AND timestamp >= DATE_SUB(NOW(), INTERVAL 15 MINUTE) 
+       AND ${OPERATIONAL_TS} >= DATE_SUB(NOW(), INTERVAL 15 MINUTE) 
        AND log_level IN ('ERROR','CRITICAL','FATAL')
      GROUP BY COALESCE(error_type, event_type, 'unknown')
      HAVING current_count >= 20
@@ -391,6 +392,21 @@ async function evalSmartAlertsForUser(userId) {
   }
 
   return created;
+}
+
+/** Run alert evaluation after log ingestion (Render/Vercel: direct eval + event bus). */
+export async function triggerPostIngestAlerts(userId, count, summary = null) {
+  if (!userId || !count) return;
+  if (isCloudDeployment()) {
+    try {
+      await evalAllForUser(userId);
+    } catch (e) {
+      logger.error({ event: 'post_ingest_alert_eval_failed', userId, error: e.message }, '[ALERT]');
+    }
+  }
+  setImmediate(() => {
+    alertEngineBus.emit('logs.inserted', { userId, count, summary });
+  });
 }
 
 export async function evalAllForUser(userId = null) {

@@ -11,9 +11,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 
 describe('Dashboard API trends logic', () => {
-  it('hourly query uses COALESCE timestamp columns', () => {
+  it('hourly query uses imported_at for operational windows', () => {
     const src = readFileSync(path.join(root, 'routes/dashboard.js'), 'utf8');
-    expect(src).toContain('COALESCE(timestamp, imported_at)');
+    expect(src).toContain('OPERATIONAL_TS');
     expect(src).toContain('UPPER(log_level)');
   });
 
@@ -59,16 +59,17 @@ describe('Alert engine', () => {
     expect(src).toContain('is_global = 1');
   });
 
-  it('evalRule uses COALESCE for timestamps', () => {
+  it('evalRule uses imported_at for operational windows', () => {
     const src = readFileSync(path.join(root, 'services/alertEngine.js'), 'utf8');
-    expect(src).toContain("const tsCol = 'COALESCE(timestamp, imported_at)'");
+    expect(src).toContain("const tsCol = OPERATIONAL_TS");
+    expect(src).toContain('triggerPostIngestAlerts');
   });
 });
 
 describe('Import integration', () => {
-  it('calls evalAllForUser after import', () => {
+  it('calls triggerPostIngestAlerts after import', () => {
     const src = readFileSync(path.join(root, 'routes/import.js'), 'utf8');
-    expect(src).toContain('await evalAllForUser(userId)');
+    expect(src).toContain('triggerPostIngestAlerts');
   });
 });
 
@@ -112,8 +113,7 @@ describe('HTTP log ingestion', () => {
 
   it('ingest triggers alert eval', () => {
     const src = readFileSync(path.join(root, 'routes/logs-ingestion.js'), 'utf8');
-    expect(src).toContain("alertEngineBus.emit('logs.inserted'");
-    expect(src).toContain('await evalAllForUser(userId)');
+    expect(src).toContain('triggerPostIngestAlerts');
   });
 });
 
@@ -145,6 +145,11 @@ describe('Render config', () => {
     expect(yaml).toContain('type: web');
     expect(yaml).toContain('env: node');
     expect(yaml).toContain('healthCheckPath: /health');
+  });
+
+  it('seeds default recommendations on startup', () => {
+    const src = readFileSync(path.join(root, 'server.js'), 'utf8');
+    expect(src).toContain('ensureDefaultRecommendations');
   });
 });
 

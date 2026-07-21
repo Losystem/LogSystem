@@ -643,7 +643,7 @@
 
     // ── Logs récents ──
     function loadRecentLogs() {
-      return api.get('/api/logs?limit=20&sort=timestamp&order=desc').then(function(d){
+      return api.get('/api/logs?limit=20&sort=id&order=desc').then(function(d){
         var rows = d && d.data ? d.data : [];
         var tbody = document.getElementById('logs-tbody');
         if (!rows.length) { tbody.innerHTML='<tr><td colspan="6" class="cell-empty">' + t('dashboard.no_logs') + '</td></tr>'; return; }

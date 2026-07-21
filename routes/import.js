@@ -12,7 +12,7 @@ import { normalizeMessage } from "../lib/processing/normalize.js";
 import { classifyLog } from "../lib/processing/classify.js";
 import { generateFingerprint } from "../lib/processing/fingerprint.js";
 import { normalizeLevel } from "../services/logLevelUtils.js";
-import { alertEngineBus, evalAllForUser } from "../services/alertEngine.js";
+import { triggerPostIngestAlerts } from "../services/alertEngine.js";
 import { alertWorker } from "../workers/alertWorker.js";
 import { recordAudit } from "../middleware/audit.js";
 import { validateBody, importUploadSchema } from "../middleware/validation.js";
@@ -396,22 +396,7 @@ async function processImport(
     );
 
     if (userId && processed > 0) {
-      const isVercel = !!(process.env.VERCEL || process.env.VERCEL_ENV);
-      if (isVercel) {
-        try {
-          await evalAllForUser(userId);
-        } catch (e) {
-          logger.error({ event: 'vercel_alert_eval_failed', userId, error: e.message }, '[IMPORT]');
-        }
-      } else {
-        setImmediate(() => {
-          alertEngineBus.emit("logs.inserted", {
-            userId,
-            count: processed,
-            summary: importSummary,
-          });
-        });
-      }
+      await triggerPostIngestAlerts(userId, processed, importSummary);
       await invalidateDashboard(userId);
     }
   } catch (e) {

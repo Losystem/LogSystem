@@ -8,7 +8,8 @@ import { normalizeMessage } from "../lib/processing/normalize.js";
 import { classifyLog } from "../lib/processing/classify.js";
 import { generateFingerprint } from "../lib/processing/fingerprint.js";
 import { enrichLogMetadata } from "../lib/processing/logMetadata.js";
-import { alertEngineBus, evalAllForUser } from "../services/alertEngine.js";
+import { triggerPostIngestAlerts } from "../services/alertEngine.js";
+import { OPERATIONAL_TS } from "../lib/operationalTime.js";
 import crypto from 'crypto';
 
 const router = Router();
@@ -138,16 +139,7 @@ router.post('/ingest', async (req, res) => {
     await conn.commit();
 
     if (userId && ingestResults.success > 0) {
-      const isVercel = !!(process.env.VERCEL || process.env.VERCEL_ENV);
-      if (isVercel) {
-        try {
-          await evalAllForUser(userId);
-        } catch (alertErr) {
-          logger.error({ event: 'ingest_alert_eval_failed', userId, error: alertErr.message }, '[INGEST]');
-        }
-      } else {
-        alertEngineBus.emit('logs.inserted', { userId, count: ingestResults.success });
-      }
+      await triggerPostIngestAlerts(userId, ingestResults.success);
     }
 
     res.json({
@@ -239,7 +231,7 @@ router.get('/watch/stats', async (req, res) => {
         SUM(CASE WHEN log_level = 'FATAL' THEN 1 ELSE 0 END) as fatal_count,
         COUNT(DISTINCT service) as services
        FROM logs
-       WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+       WHERE ${OPERATIONAL_TS} >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
        ${userIdClause}`,
       userIdParams
     );
@@ -248,7 +240,7 @@ router.get('/watch/stats', async (req, res) => {
     const [logsPerMin] = await pool.execute(
       `SELECT COUNT(*) / 5.0 as logs_per_min
        FROM logs
-       WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+       WHERE ${OPERATIONAL_TS} >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)
        ${userIdClause}`,
       userIdParams
     );
@@ -282,15 +274,15 @@ router.get('/trending-by-hour', async (req, res) => {
     // Récupérer les stats par heure
     const [trends] = await pool.execute(
       `SELECT 
-        HOUR(timestamp) as hour,
+        HOUR(${OPERATIONAL_TS}) as hour,
         COUNT(*) as total,
         SUM(CASE WHEN log_level IN ('ERROR','CRITICAL','FATAL') THEN 1 ELSE 0 END) as errors,
         SUM(CASE WHEN log_level = 'CRITICAL' THEN 1 ELSE 0 END) as critical,
         SUM(CASE WHEN log_level = 'FATAL' THEN 1 ELSE 0 END) as fatal
        FROM logs
-       WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+       WHERE ${OPERATIONAL_TS} >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
        ${userIdClause}
-       GROUP BY HOUR(timestamp)
+       GROUP BY HOUR(${OPERATIONAL_TS})
        ORDER BY hour ASC`,
       userIdParams
     );
@@ -316,9 +308,9 @@ router.get('/level-distribution', async (req, res) => {
       `SELECT 
         log_level as level,
         COUNT(*) as count,
-        ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM logs WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR) ${userIdClause}), 2) as percentage
+        ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM logs WHERE ${OPERATIONAL_TS} >= DATE_SUB(NOW(), INTERVAL 24 HOUR) ${userIdClause}), 2) as percentage
        FROM logs
-       WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+       WHERE ${OPERATIONAL_TS} >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
        ${userIdClause}
        GROUP BY log_level
        ORDER BY FIELD(log_level, 'FATAL', 'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG')`,
